@@ -1,0 +1,20 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read and write their own profile and all subcollections
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // Users can read and write their own subcollections (including chat_sessions, scans, etc.)
+      match /{subcollection}/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+    
+    // Legacy: Allow access to root-level chat_sessions collection (for backward compatibility)
+    // This can be removed once all data is migrated to user subcollections
+    match /chat_sessions/{sessionId} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

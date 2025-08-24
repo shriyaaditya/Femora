@@ -1,0 +1,46 @@
+{
+  "expo": {
+    "name": "Femora",
+    "slug": "my-expo-app",
+    "version": "1.0.0",
+
+    
+
+    "experiments": {
+      "tsconfigPaths": true
+    },
+
+    "plugins": [],
+
+    "orientation": "portrait",
+    "icon": "./assets/mora.png",
+
+    "userInterfaceStyle": "light",
+
+    
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.example.myexpoapp"
+    },
+    "android": {
+      "package": "com.femora.myexpoapp",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": {
+            "scheme": "myexpoapp"
+          },
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+      
+    },
+    "scheme": "myexpoapp",
+    "extra": {
+      "expoClientId": "896975254795-70mvmibdu8stdfnsc7uo11eoikrt1rll.apps.googleusercontent.com",
+      "iosClientId": "896975254795-70mvmibdu8stdfnsc7uo11eoikrt1rll.apps.googleusercontent.com",
+      "androidClientId": "896975254795-6k4799en22222ld01dbn8pbeimq2qils.apps.googleusercontent.com"
+    }
+  }
+}
