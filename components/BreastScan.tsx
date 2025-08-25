@@ -21,39 +21,40 @@ import AnimatedGridOverlay from './AnimatedGridOverlay';
 interface BreastScanProps {
   onNavigateToHome: () => void;
   onNavigateToReport: (scanId: string) => void;
+  onNavigateToCalendar?: () => void;
 }
 
-const BreastScan: React.FC<BreastScanProps> = ({ onNavigateToHome, onNavigateToReport }) => {
+const BreastScan: React.FC<BreastScanProps> = ({
+  onNavigateToHome,
+  onNavigateToReport,
+  onNavigateToCalendar,
+}) => {
   const { user } = useAuth();
   const [isScanning, setIsScanning] = useState(false);
   const [capturedImages, setCapturedImages] = useState<string[]>([]);
   const [tempFiles, setTempFiles] = useState<string[]>([]);
   const [processingStatus, setProcessingStatus] = useState<ProcessingStatus | null>(null);
-  const [isGridActive, setIsGridActive] = useState(false); // Start as static
+  const [isGridActive, setIsGridActive] = useState(true);
   const [scanCompleted, setScanCompleted] = useState(false);
-  const [scanProgress, setScanProgress] = useState(0);
-  const [cameraReady, setCameraReady] = useState(false);
 
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [mediaPermission, setMediaPermission] = useState(false);
-  
+
   const cameraRef = useRef<CameraView | null>(null);
   const scanAnimation = useRef(new Animated.Value(0)).current;
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-  const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     (async () => {
       // Request Media Library permission
       const { status: mediaStatus } = await MediaLibrary.requestPermissionsAsync();
-      setMediaPermission(mediaStatus === "granted");
+      setMediaPermission(mediaStatus === 'granted');
     })();
   }, []);
 
   useEffect(() => {
     if (isScanning && !scanCompleted) {
-      // Start scanning animation only when scanning begins
-      setIsGridActive(true);
+      // Start scanning animation
       Animated.loop(
         Animated.sequence([
           Animated.timing(scanAnimation, {
@@ -68,137 +69,67 @@ const BreastScan: React.FC<BreastScanProps> = ({ onNavigateToHome, onNavigateToR
           }),
         ])
       ).start();
-
-      // Start progress animation
-      setScanProgress(0);
-      progressIntervalRef.current = setInterval(() => {
-        setScanProgress(prev => {
-          if (prev >= 100) {
-            if (progressIntervalRef.current) {
-              clearInterval(progressIntervalRef.current);
-            }
-            // Stop camera and animation when progress reaches 100%
-            stopCameraAndAnimation();
-            return 100;
-          }
-          return prev + 2;
-        });
-      }, 100);
     } else {
       // Stop animation when not scanning
-      setIsGridActive(false);
       scanAnimation.stopAnimation();
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
-        progressIntervalRef.current = null;
-      }
     }
   }, [isScanning, scanCompleted]);
 
-  const stopCameraAndAnimation = () => {
-    // Stop camera
-    if (cameraRef.current) {
-      setCameraReady(false);
-    }
-    
-    // Stop scanning state
-    setIsScanning(false);
-    
-    // Stop animation
-    setIsGridActive(false);
-    scanAnimation.stopAnimation();
-    
-    // Clear intervals
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    if (progressIntervalRef.current) {
-      clearInterval(progressIntervalRef.current);
-      progressIntervalRef.current = null;
-    }
-    
-    // Mark scan as completed
-    setScanCompleted(true);
-  };
-
   const startScan = async () => {
-    // First request camera permission if not granted
-    if (!cameraPermission?.granted) {
-      const permissionResult = await requestCameraPermission();
-      if (!permissionResult.granted) {
-        Alert.alert('Permission Required', 'Camera access is required for breast scanning');
-        return;
-      }
+    if (!cameraRef.current) return;
+
+    setIsScanning(true);
+    setCapturedImages([]);
+    setTempFiles([]);
+    setProcessingStatus(null);
+    setScanCompleted(false);
+
+    try {
+      let captureCount = 0;
+      const maxCaptures = 5; // Capture 5 images total
+
+      // Capture multiple images over 10 seconds
+      intervalRef.current = setInterval(async () => {
+        // Stop if we've completed scan or reached max captures
+        if (scanCompleted || captureCount >= maxCaptures) {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          if (!scanCompleted) {
+            await completeScan();
+          }
+          return;
+        }
+
+        try {
+          const photo = await cameraRef.current?.takePictureAsync({
+            quality: 0.8,
+            base64: true,
+          });
+
+          if (photo?.base64) {
+            setCapturedImages((prev) => [...prev, photo.base64!]);
+            captureCount++;
+
+            // Process image using Python backend
+            await processImageWithPython(photo.base64);
+          }
+        } catch (error) {
+          console.error('Image capture error:', error);
+        }
+      }, 2000); // Capture every 2 seconds
+    } catch (error) {
+      console.error('Scan error:', error);
+      Alert.alert('Error', 'Failed to start scan');
+      setIsScanning(false);
     }
-    
-    // Initialize camera
-    setCameraReady(true);
-    
-    // Wait for camera to be ready
-    setTimeout(async () => {
-      if (!cameraRef.current) {
-        Alert.alert('Error', 'Camera failed to initialize');
-        return;
-      }
-      
-      setIsScanning(true);
-      setCapturedImages([]);
-      setTempFiles([]);
-      setProcessingStatus(null);
-      setScanCompleted(false);
-      setScanProgress(0);
-
-      try {
-        let captureCount = 0;
-        const maxCaptures = 5; // Capture 5 images total
-        
-        // Capture multiple images over 10 seconds
-        intervalRef.current = setInterval(async () => {
-          // Stop if we've completed scan or reached max captures
-          if (scanCompleted || captureCount >= maxCaptures) {
-            if (intervalRef.current) {
-              clearInterval(intervalRef.current);
-              intervalRef.current = null;
-            }
-            if (!scanCompleted) {
-              await completeScan();
-            }
-            return;
-          }
-
-          try {
-            const photo = await cameraRef.current?.takePictureAsync({
-              quality: 0.8,
-              base64: true,
-              skipProcessing: true, // Skip processing to avoid click sound
-            });
-
-            if (photo?.base64) {
-              setCapturedImages(prev => [...prev, photo.base64!]);
-              captureCount++;
-              
-              // Process image using Python backend
-              await processImageWithPython(photo.base64);
-            }
-
-          } catch (error) {
-            console.error('Image capture error:', error);
-          }
-        }, 2000); // Capture every 2 seconds
-
-      } catch (error) {
-        console.error('Scan error:', error);
-        Alert.alert('Error', 'Failed to start scan');
-        setIsScanning(false);
-      }
-    }, 1000); // Wait 1 second for camera to initialize
   };
 
   const processImageWithPython = async (base64Image: string) => {
     try {
       console.log('🔄 Processing image with Python backend...');
-      
+
       // Use the SecureImageService to send image to Python backend
       const result = await SecureImageService.processImageDirectly(base64Image, {
         userId: user?.uid,
@@ -208,7 +139,6 @@ const BreastScan: React.FC<BreastScanProps> = ({ onNavigateToHome, onNavigateToR
 
       setProcessingStatus(result);
       console.log('✅ Python processing result:', result);
-      
     } catch (error) {
       console.error('❌ Python processing failed:', error);
       // Fallback to local processing if Python backend fails
@@ -219,7 +149,7 @@ const BreastScan: React.FC<BreastScanProps> = ({ onNavigateToHome, onNavigateToR
   const processImageLocally = async (base64Image: string) => {
     try {
       console.log('🔄 Fallback: Processing image locally...');
-      
+
       // Resize and compress image
       const processed = await ImageManipulator.manipulateAsync(
         `data:image/jpeg;base64,${base64Image}`,
@@ -235,13 +165,13 @@ const BreastScan: React.FC<BreastScanProps> = ({ onNavigateToHome, onNavigateToR
           findings: 'Local analysis completed - consult healthcare provider for detailed results',
           confidence: 75,
           riskLevel: 'Medium',
-          recommendation: 'Schedule consultation with healthcare provider for comprehensive analysis',
+          recommendation:
+            'Schedule consultation with healthcare provider for comprehensive analysis',
         },
       };
 
       setProcessingStatus(mockResult);
       console.log('✅ Local processing completed');
-      
     } catch (error) {
       console.error('❌ Local processing failed:', error);
     }
@@ -249,32 +179,28 @@ const BreastScan: React.FC<BreastScanProps> = ({ onNavigateToHome, onNavigateToR
 
   const completeScan = async () => {
     if (scanCompleted) return; // Prevent multiple completions
-    
+
     setScanCompleted(true);
-    setScanProgress(100);
-    
+
     // Clear any remaining intervals
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
       intervalRef.current = null;
-    }
-    if (progressIntervalRef.current) {
-      clearInterval(progressIntervalRef.current);
-      progressIntervalRef.current = null;
     }
 
     try {
       if (!user) return;
 
       // Wait a moment for UI to update
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise((resolve) => setTimeout(resolve, 1000));
 
       // Use Python backend results if available, otherwise use local results
       const analysisResults = processingStatus?.result || {
         findings: 'Analysis completed - comprehensive breast scan performed successfully',
         confidence: 85,
         riskLevel: 'Low',
-        recommendation: 'Continue regular screening schedule. Consult healthcare provider if you have concerns.',
+        recommendation:
+          'Continue regular screening schedule. Consult healthcare provider if you have concerns.',
       };
 
       // Save scan session to Firestore
@@ -289,18 +215,17 @@ const BreastScan: React.FC<BreastScanProps> = ({ onNavigateToHome, onNavigateToR
       });
 
       setIsScanning(false);
-      
+
       // Clean up temporary files
       if (tempFiles.length > 0) {
         // Cleanup logic here
         console.log('🧹 Cleaned up temporary files');
       }
-      
+
       // Navigate to report after a brief delay
       setTimeout(() => {
         onNavigateToReport(scanRef.id);
       }, 500);
-      
     } catch (error) {
       console.error('Failed to save scan:', error);
       Alert.alert('Error', 'Failed to save scan results');
@@ -315,17 +240,10 @@ const BreastScan: React.FC<BreastScanProps> = ({ onNavigateToHome, onNavigateToR
       clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-    if (progressIntervalRef.current) {
-      clearInterval(progressIntervalRef.current);
-      progressIntervalRef.current = null;
-    }
-    
+
     setIsScanning(false);
     setScanCompleted(false);
     setProcessingStatus(null);
-    setScanProgress(0);
-    setCameraReady(false);
-    setIsGridActive(false);
   };
 
   // Cleanup on unmount
@@ -333,9 +251,6 @@ const BreastScan: React.FC<BreastScanProps> = ({ onNavigateToHome, onNavigateToR
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
-      }
-      if (progressIntervalRef.current) {
-        clearInterval(progressIntervalRef.current);
       }
     };
   }, []);
@@ -351,21 +266,38 @@ const BreastScan: React.FC<BreastScanProps> = ({ onNavigateToHome, onNavigateToR
     );
   }
 
+  if (!cameraPermission.granted) {
+    return (
+      <SafeAreaView className="flex-1 bg-purple-50">
+        <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+        <View className="flex-1 items-center justify-center p-6">
+          <Text className="mb-4 text-center text-lg text-purple-800">
+            Camera access is required for breast scanning
+          </Text>
+          <TouchableOpacity
+            className="rounded-full bg-purple-600 px-6 py-3"
+            style={{ backgroundColor: '#9992e1' }}
+            onPress={requestCameraPermission}>
+            <Text className="font-semibold text-white">Grant Permission</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            className="mt-3 rounded-full bg-gray-400 px-6 py-3"
+            onPress={() => onNavigateToHome()}>
+            <Text className="font-semibold text-white">Go Back</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-purple-50">
       <StatusBar barStyle="light-content" backgroundColor="#9992e1" />
-      
-      {/* Hidden Camera - only starts when cameraReady is true */}
-      {cameraReady && (
-        <View style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden' }}>
-          <CameraView
-            ref={cameraRef}
-            facing="front"
-            style={{ width: 1, height: 1 }}
-            onCameraReady={() => setCameraReady(true)}
-          />
-        </View>
-      )}
+
+      {/* Hidden Camera */}
+      <View style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden' }}>
+        <CameraView ref={cameraRef} facing="front" style={{ width: 1, height: 1 }} />
+      </View>
 
       <Navbar title="Breast Scan" onBack={onNavigateToHome} />
 
@@ -375,81 +307,65 @@ const BreastScan: React.FC<BreastScanProps> = ({ onNavigateToHome, onNavigateToR
         <View className="absolute inset-0 top-16">
           <AnimatedGridOverlay isActive={isGridActive} />
         </View>
-        
-        {/* Content Container - positioned below the animation */}
-        <View className="flex-1 justify-end pb-20 px-6 z-10">
+
+        {/* Content Container - centered in remaining space */}
+        <View className="fixed z-10 flex-1 items-center justify-center px-6">
           {/* Scanning Instructions */}
-          <View className="items-center mb-8">
-            <Text className="text-xl font-semibold text-purple-800 text-center mb-4">
-              {scanCompleted ? 'Scan Complete!' : 
-               isScanning ? 'Scanning in Progress...' : 
-               'Ready to Start Scan'}
+          <View className="mb-8 items-center">
+            <Text className="mb-4 text-center text-xl font-semibold text-purple-800">
+              {scanCompleted
+                ? 'Scan Complete!'
+                : isScanning
+                  ? 'Scanning in Progress...'
+                  : 'Ready to Start Scan'}
             </Text>
-            
-            <Text className="text-base text-purple-700 text-center mb-8 leading-6">
-              {scanCompleted ? 'Generating your personalized health report...' :
-               isScanning 
-                ? 'Please remain still. The scan will complete automatically in a few seconds.'
-                : 'Position yourself comfortably. The camera will capture images automatically when you start.'
-              }
+
+            <Text className="mb-8 text-center text-base leading-6 text-purple-700">
+              {scanCompleted
+                ? 'Generating your personalized health report...'
+                : isScanning
+                  ? 'Please remain still. The scan will complete automatically in a few seconds.'
+                  : 'Position yourself comfortably. The camera will capture images automatically when you start.'}
             </Text>
           </View>
 
-          {/* Progress Indicator */}
-          {isScanning && !scanCompleted && (
-            <View className="w-full max-w-xs mb-6 self-center">
-              <View className="w-full bg-gray-200 rounded-full h-3 mb-2">
-                <View 
-                  className="bg-blue-500 h-3 rounded-full transition-all duration-300"
-                  style={{ width: `${scanProgress}%` }}
-                />
-              </View>
-              <Text className="text-sm text-center text-purple-700">
-                Scan Progress: {scanProgress}%
-              </Text>
-            </View>
-          )}
-
           {/* Processing Status */}
           {processingStatus && (
-            <View className="w-full max-w-xs mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200 self-center">
-              <Text className="text-sm text-blue-800 text-center">
-                🔄 {processingStatus.status === 'processing' ? 'Processing with AI...' : 
-                     processingStatus.status === 'completed' ? 'AI Analysis Complete!' : 
-                     processingStatus.status === 'failed' ? 'Processing Failed' : 'Processing...'}
+            <View className="mb-6 w-full max-w-xs rounded-lg border border-blue-200 bg-blue-50 p-4">
+              <Text className="text-center text-sm text-blue-800">
+                🔄{' '}
+                {processingStatus.status === 'processing'
+                  ? 'Processing with AI...'
+                  : processingStatus.status === 'completed'
+                    ? 'AI Analysis Complete!'
+                    : processingStatus.status === 'failed'
+                      ? 'Processing Failed'
+                      : 'Processing...'}
               </Text>
             </View>
           )}
 
-          {/* Action Buttons - properly aligned */}
-          <View className="w-full max-w-xs gap-5 self-center">
+          {/* Action Buttons */}
+          <View className="top-20 w-full max-w-xs gap-5">
             {!isScanning && !scanCompleted ? (
               <TouchableOpacity
-                className="py-2 rounded-full border-2 border-black"
+                className="rounded-full py-4 "
                 style={{ backgroundColor: '#9992e1' }}
                 onPress={startScan}>
-                <Text className="text-white text-center text-lg ">
-                  Start Scan
-                </Text>
+                <Text className="text-center text-lg font-semibold text-white">Start Scan</Text>
+              </TouchableOpacity>
+            ) : isScanning && !scanCompleted ? (
+              <TouchableOpacity className="rounded-full bg-red-500 py-4" onPress={stopScan}>
+                <Text className="text-center text-lg font-semibold text-white">Stop Scan</Text>
               </TouchableOpacity>
             ) : null}
 
-            {isScanning && !scanCompleted ? (
-              <TouchableOpacity
-                className="bg-purple-300 py-2 rounded-full border-1 border-black"
-                onPress={stopScan}>
-                <Text className="text-white text-center text-lg font-semibold">
-                  Stop Scan
-                </Text>
-              </TouchableOpacity>
-            ) : null}
-       
             {!scanCompleted && (
               <TouchableOpacity
-                className="py-3 rounded-full border-2 border-black"
-                style={{ 
-                  backgroundColor: 'rgba(153, 146, 225, 0.2)', 
-                  borderColor: '#9992e1' 
+                className="rounded-full border py-3"
+                style={{
+                  backgroundColor: 'rgba(153, 146, 225, 0.2)',
+                  borderColor: '#9992e1',
                 }}
                 onPress={onNavigateToHome}>
                 <Text className="text-center font-medium" style={{ color: '#9992e1' }}>
@@ -460,9 +376,10 @@ const BreastScan: React.FC<BreastScanProps> = ({ onNavigateToHome, onNavigateToR
           </View>
 
           {/* Security Notice */}
-          <View className="mt-6">
-            <Text className="text-xs text-center" style={{ color: '#9992e1' }}>
-              🔒 Your privacy is protected. Images are encrypted and securely processed with Python AI backend.
+          <View className="absolute bottom-8 left-6 right-6">
+            <Text className="text-center text-xs" style={{ color: '#9992e1' }}>
+              🔒 Your privacy is protected. Images are encrypted and securely processed with Python
+              AI backend.
             </Text>
           </View>
         </View>

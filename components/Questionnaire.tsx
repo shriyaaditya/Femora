@@ -18,7 +18,10 @@ const isMediumDevice = screenWidth >= 375 && screenWidth < 414;
 
 interface QuestionnaireProps {
   onNavigateToHome: () => void;
-  onNavigateToUserProfile?: () => void;
+  onNavigateToUserProfile: () => void;
+  onStartBreastScan: () => void;
+  onNavigateToCalendar?: () => void;
+  onNavigateToAskMora?: () => void;
 }
 
 type FirstScanStep = {
@@ -39,19 +42,23 @@ const guidedFirstScanSteps: FirstScanStep[] = [
       'Look for skin dimpling, redness, rash, or nipple turning inward.',
     ],
     question: 'Do your breasts look the same as usual in size, shape, and skin appearance?',
-    options: ['Yes', 'No', 'Not sure'],
+    options: [
+      'Yes, no visible change',
+      'I notice changes (size, redness, or nipple inversion)',
+      'Not sure',
+    ],
     imageUri:
       'https://res.cloudinary.com/doojbkvn6/image/upload/v1755259742/Gemini_Generated_Image_850v1h850v1h850v_hd62qk.png',
-  }, 
+  },
   {
     title: 'Feel While Standing/Sitting',
     howTo: [
-      'Raise one arm and use the other hands 3 middle fingertips.',
+      'Raise one arm and use the other hand’s 3 middle fingertips.',
       'Press in small circles from the outer breast toward the nipple.',
       'Cover the whole breast area.',
     ],
     question: 'Do you feel any new lump, knot, or thickened area?',
-    options: ['No lump felt', ' Yes, I feel something new', 'Not sure'],
+    options: ['No lump felt', 'Yes, I feel something new', 'Not sure'],
     imageUri:
       'https://res.cloudinary.com/doojbkvn6/image/upload/v1755259740/Gemini_Generated_Image_x35tqox35tqox35t_ughgpd.png',
   },
@@ -63,7 +70,7 @@ const guidedFirstScanSteps: FirstScanStep[] = [
       'Feel for lumps, swelling, or firm spots.',
     ],
     question: 'Do you notice any unusual firmness, swelling, or lump under your breast or arm?',
-    options: [' No', 'Yes', ' Not sure'],
+    options: ['No', 'Yes', 'Not sure'],
     imageUri:
       'https://res.cloudinary.com/doojbkvn6/image/upload/v1755259743/Gemini_Generated_Image_g2sg4lg2sg4lg2sg_agvrto.png',
   },
@@ -72,14 +79,45 @@ const guidedFirstScanSteps: FirstScanStep[] = [
     howTo: [
       'Gently press each nipple between your thumb and finger.',
       'Check for fluid: clear, milky, yellow, or bloody.',
+      'Notice if nipples appear inverted or unusually changed.',
     ],
-    question: 'When gently pressing the nipple, does any fluid come out?',
-    options: ['No fluid', 'Yes, clear or milky', ' Yes, yellow or bloody fluid', ' Not sure'],
+    question: 'Do you notice any nipple changes or fluid discharge?',
+    options: [
+      'No change',
+      'Yes, fluid (clear or milky)',
+      'Yes, fluid (yellow or bloody)',
+      'Yes, nipple looks inverted',
+      'Not sure',
+    ],
     imageUri:
       'https://res.cloudinary.com/doojbkvn6/image/upload/v1755259740/Gemini_Generated_Image_gw2dr8gw2dr8gw2d_uo1yre.png',
   },
-];
 
+  {
+    title: 'Discomfort or Tenderness',
+    howTo: [
+      'Gently press around different areas of the breast with your fingers.',
+      'Notice if there is tenderness localized to a specific spot or if it’s more diffuse/general.',
+      'Compare both breasts: is the discomfort symmetrical or only in one?',
+    ],
+    question: 'Are you feeling any discomfort or tenderness?',
+    options: ['No discomfort', 'Mild discomfort', 'Severe discomfort'], // scale of 3
+    imageUri:
+      'https://res.cloudinary.com/doojbkvn6/image/upload/v1755955099/Gemini_Generated_Image_z72aquz72aquz72a_vtw1yu.png',
+  },
+  {
+    title: 'Pain or Heaviness',
+    howTo: [
+      'Feel for fullness – Place your hand under your breast and notice if it feels heavier or fuller than usual.',
+      'Compare sides – Check if one breast feels different from the other.',
+      'Think about timing – Ask yourself if the heaviness or pain comes and goes with your menstrual cycle, or if it stays all the time.',
+    ],
+    question: 'Do you experience unusual pain or heaviness in the breasts?',
+    options: ['No pain', 'Mild', 'Moderate', 'Severe', 'Very severe'], // scale of 5
+    imageUri:
+      'https://res.cloudinary.com/doojbkvn6/image/upload/v1755955094/Gemini_Generated_Image_bqub94bqub94bqub_grglsz.png',
+  },
+];
 const recentScanQuestions = [
   'Any changes since your last scan?',
   'Have you noticed any new symptoms recently?',
@@ -98,6 +136,9 @@ const privateScreeningQuestion = 'Would you like to perform a private screening 
 const Questionnaire: React.FC<QuestionnaireProps> = ({
   onNavigateToHome,
   onNavigateToUserProfile,
+  onStartBreastScan,
+  onNavigateToCalendar,
+  onNavigateToAskMora,
 }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1);
   const [activeQuestions, setActiveQuestions] = useState<string[]>([]);
@@ -195,8 +236,12 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
             className="rounded-full p-3 shadow-lg active:scale-95"
             style={buttonStyle}
             onPress={() => {
-              // Handle "Yes" - you might want to navigate to private screening
-              onNavigateToHome();
+              // Handle "Yes" - start breast scan
+              if (onStartBreastScan) {
+                onStartBreastScan();
+              } else {
+                onNavigateToHome();
+              }
             }}>
             <Text className="text-center text-lg text-black">Yes, I would like to</Text>
           </TouchableOpacity>
@@ -209,8 +254,6 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
         </View>
       );
     }
-
-    
 
     // Guided First Scan options
     if (isGuidedFirstScan) {
@@ -681,45 +724,54 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
           ) : null}
 
           {/* Initial options aligned center */}
-          {currentQuestionIndex === 0 && activeQuestions.length === 0 && !isGuidedFirstScan && !showPrivateScreening && (
-            <View style={{ width: '100%', alignItems: 'center', marginTop: 12 }}>
-              <View style={{ width: '100%', maxWidth: 400, gap: isSmallDevice ? 10 : 12 }}>
-                <TouchableOpacity
-                  style={{
-                    borderRadius: 24,
-                    paddingVertical: isSmallDevice ? 10 : 12,
-                    backgroundColor: '#E7B8FF',
-                    borderWidth: 1,
-                    borderColor: '#000',
-                  }}
-                  onPress={() => handleFirstAnswer('Recently')}>
-                  <Text style={{ textAlign: 'center', color: 'black', fontWeight: '600' }}>Recently</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={{
-                    borderRadius: 24,
-                    paddingVertical: isSmallDevice ? 10 : 12,
-                    backgroundColor: '#E7B8FF',
-                    borderWidth: 1,
-                    borderColor: '#000',
-                  }}
-                  onPress={() => handleFirstAnswer('A while ago')}>
-                  <Text style={{ textAlign: 'center', color: 'black', fontWeight: '600' }}>A while ago</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={{
-                    borderRadius: 24,
-                    paddingVertical: isSmallDevice ? 10 : 12,
-                    backgroundColor: '#E7B8FF',
-                    borderWidth: 1,
-                    borderColor: '#000',
-                  }}
-                  onPress={() => handleFirstAnswer('First time')}>
-                  <Text style={{ textAlign: 'center', color: 'black', fontWeight: '600' }}>First time</Text>
-                </TouchableOpacity>
+          {currentQuestionIndex === 0 &&
+            activeQuestions.length === 0 &&
+            !isGuidedFirstScan &&
+            !showPrivateScreening && (
+              <View style={{ width: '100%', alignItems: 'center', marginTop: 12 }}>
+                <View style={{ width: '100%', maxWidth: 400, gap: isSmallDevice ? 10 : 12 }}>
+                  <TouchableOpacity
+                    style={{
+                      borderRadius: 24,
+                      paddingVertical: isSmallDevice ? 10 : 12,
+                      backgroundColor: '#E7B8FF',
+                      borderWidth: 1,
+                      borderColor: '#000',
+                    }}
+                    onPress={() => handleFirstAnswer('Recently')}>
+                    <Text style={{ textAlign: 'center', color: 'black', fontWeight: '600' }}>
+                      Recently
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{
+                      borderRadius: 24,
+                      paddingVertical: isSmallDevice ? 10 : 12,
+                      backgroundColor: '#E7B8FF',
+                      borderWidth: 1,
+                      borderColor: '#000',
+                    }}
+                    onPress={() => handleFirstAnswer('A while ago')}>
+                    <Text style={{ textAlign: 'center', color: 'black', fontWeight: '600' }}>
+                      A while ago
+                    </Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{
+                      borderRadius: 24,
+                      paddingVertical: isSmallDevice ? 10 : 12,
+                      backgroundColor: '#E7B8FF',
+                      borderWidth: 1,
+                      borderColor: '#000',
+                    }}
+                    onPress={() => handleFirstAnswer('First time')}>
+                    <Text style={{ textAlign: 'center', color: 'black', fontWeight: '600' }}>
+                      First time
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </View>
-          )}
+            )}
           {isGuidedFirstScan && <GuidedHowToCard />}
 
           {/* Enhanced Answer Options */}
@@ -770,7 +822,9 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
       <BottomBar
         onScanPress={() => {}} // Scan is already active
         onHomePress={onNavigateToHome}
-        onProfilePress={onNavigateToUserProfile}
+        onCalendarPress={onNavigateToCalendar}
+        onAIChatPress={onNavigateToAskMora}
+        onDoctorPress={onNavigateToUserProfile}
         activeTab="scan"
       />
     </SafeAreaView>

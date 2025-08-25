@@ -146,7 +146,7 @@ const Login: React.FC<LoginProps> = ({ onShowProfileForm }) => {
 
             {/* Google Sign-In */}
             <TouchableOpacity
-              className={`mt-3 rounded-2xl py-4 border border-gray-300 bg-white ${loading ? 'opacity-50' : ''}`}
+              className={`mt-3 rounded-2xl border border-gray-300 bg-white py-4 ${loading ? 'opacity-50' : ''}`}
               style={{
                 shadowColor: '#000',
                 shadowOffset: { width: 0, height: 2 },
@@ -156,7 +156,9 @@ const Login: React.FC<LoginProps> = ({ onShowProfileForm }) => {
               }}
               onPress={handleGoogleSignIn}
               disabled={loading}>
-              <Text className="text-center text-lg font-semibold text-black">Continue with Google</Text>
+              <Text className="text-center text-lg font-semibold text-black">
+                Continue with Google
+              </Text>
             </TouchableOpacity>
           </View>
 

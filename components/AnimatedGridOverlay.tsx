@@ -13,7 +13,9 @@ const AnimatedGridOverlay: React.FC<AnimatedGridOverlayProps> = ({ isActive = tr
 
   // Initialize grid refs for 6x6 grid (36 total cells)
   useEffect(() => {
-    gridRefs.current = Array(36).fill(null).map(() => new Animated.Value(0));
+    gridRefs.current = Array(36)
+      .fill(null)
+      .map(() => new Animated.Value(0));
   }, []);
 
   // Start animations when component mounts or isActive changes
@@ -31,7 +33,7 @@ const AnimatedGridOverlay: React.FC<AnimatedGridOverlayProps> = ({ isActive = tr
     const animations = gridRefs.current.map((animValue, index) => {
       const randomDelay = Math.random() * 2000; // Random delay up to 2 seconds
       const randomDuration = 800 + Math.random() * 800; // Random duration 800-1600ms
-      
+
       return Animated.sequence([
         Animated.delay(randomDelay),
         Animated.loop(
@@ -47,7 +49,7 @@ const AnimatedGridOverlay: React.FC<AnimatedGridOverlayProps> = ({ isActive = tr
               useNativeDriver: false,
             }),
           ])
-        )
+        ),
       ]);
     });
 
@@ -87,10 +89,10 @@ const AnimatedGridOverlay: React.FC<AnimatedGridOverlayProps> = ({ isActive = tr
     // Use multiple factors to create more randomness
     const randomFactor1 = (index * 17 + 23) % colorPalette.length;
     const randomFactor2 = (index * 31 + 47) % colorPalette.length;
-    
+
     const startColor = colorPalette[randomFactor1];
     const endColor = colorPalette[randomFactor2];
-    
+
     return animatedValue.interpolate({
       inputRange: [0, 1],
       outputRange: [startColor, endColor],
@@ -100,7 +102,7 @@ const AnimatedGridOverlay: React.FC<AnimatedGridOverlayProps> = ({ isActive = tr
   const gridSize = Math.min(screenWidth, screenHeight) / 6;
 
   return (
-    <View 
+    <View
       style={{
         position: 'absolute',
         top: 0,
@@ -111,18 +113,18 @@ const AnimatedGridOverlay: React.FC<AnimatedGridOverlayProps> = ({ isActive = tr
         alignItems: 'center',
         zIndex: 10,
         pointerEvents: 'none',
-      }}
-    >
-      <View style={{ 
-        flexDirection: 'row', 
-        flexWrap: 'wrap', 
-        width: screenWidth, 
-        height: screenHeight 
       }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          flexWrap: 'wrap',
+          width: screenWidth,
+          height: screenHeight,
+        }}>
         {gridRefs.current.map((animatedValue, index) => {
           const row = Math.floor(index / 6);
           const col = index % 6;
-          
+
           return (
             <Animated.View
               key={index}

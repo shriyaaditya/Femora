@@ -9,13 +9,23 @@ import {
   Image,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
+import BottomBar from './BottomBar';
 
 interface ViewHistoryProps {
   onNavigateToHome: () => void;
-  onNavigateToUserProfile?: () => void;
+  onNavigateToUserProfile: () => void;
+  onNavigateToCalendar?: () => void;
+  onNavigateToAskMora?: () => void;
+  onNavigateToScan?: () => void;
 }
 
-const ViewHistory: React.FC<ViewHistoryProps> = ({ onNavigateToHome, onNavigateToUserProfile }) => {
+const ViewHistory: React.FC<ViewHistoryProps> = ({
+  onNavigateToHome,
+  onNavigateToUserProfile,
+  onNavigateToCalendar,
+  onNavigateToAskMora,
+  onNavigateToScan,
+}) => {
   const { user } = useAuth();
 
   // Mock data for reports - replace with actual data from Firebase
@@ -28,24 +38,23 @@ const ViewHistory: React.FC<ViewHistoryProps> = ({ onNavigateToHome, onNavigateT
   ];
 
   const interpolateColor = (start: string, end: string, factor: number) => {
-  const hexToRgb = (hex: string) => {
-    hex = hex.replace('#', '');
-    return hex.length === 3
-      ? hex.split('').map((x) => parseInt(x + x, 16))
-      : [0, 0, 0].map((_, i) => parseInt(hex.substr(i * 2, 2), 16));
+    const hexToRgb = (hex: string) => {
+      hex = hex.replace('#', '');
+      return hex.length === 3
+        ? hex.split('').map((x) => parseInt(x + x, 16))
+        : [0, 0, 0].map((_, i) => parseInt(hex.substr(i * 2, 2), 16));
+    };
+    const rgbToHex = (r: number, g: number, b: number) =>
+      `#${[r, g, b].map((x) => x.toString(16).padStart(2, '0')).join('')}`;
+
+    const startRgb = hexToRgb(start);
+    const endRgb = hexToRgb(end);
+
+    const result = startRgb.map((startVal, i) =>
+      Math.round(startVal + factor * (endRgb[i] - startVal))
+    );
+    return rgbToHex(result[0], result[1], result[2]);
   };
-  const rgbToHex = (r: number, g: number, b: number) =>
-    `#${[r, g, b].map((x) => x.toString(16).padStart(2, '0')).join('')}`;
-
-  const startRgb = hexToRgb(start);
-  const endRgb = hexToRgb(end);
-
-  const result = startRgb.map((startVal, i) =>
-    Math.round(startVal + factor * (endRgb[i] - startVal))
-  );
-  return rgbToHex(result[0], result[1], result[2]);
-};
-
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -85,7 +94,7 @@ const ViewHistory: React.FC<ViewHistoryProps> = ({ onNavigateToHome, onNavigateT
           {reports.map((report) => (
             <TouchableOpacity
               key={report.id}
-              className="rounded-2xl border border-[#000] bg-[#E7B8FF] px-4 py-3 mb-4"
+              className="mb-4 rounded-2xl border border-[#000] bg-[#E7B8FF] px-4 py-3"
               onPress={() => {
                 // TODO: Navigate to detailed report view
                 console.log('View report:', report.id);
@@ -100,19 +109,14 @@ const ViewHistory: React.FC<ViewHistoryProps> = ({ onNavigateToHome, onNavigateT
       </ScrollView>
 
       {/* Bottom Navigation */}
-      <View className="flex-row items-center justify-around bg-[#FFB0D9] px-5 py-4">
-        <TouchableOpacity className="p-2">
-          <Text className="text-xl text-black">+</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity className="p-2" onPress={onNavigateToHome}>
-          <Text className="text-xl text-black">🏠</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity className="p-2" onPress={onNavigateToUserProfile}>
-          <Text className="text-xl text-black">👤</Text>
-        </TouchableOpacity>
-      </View>
+      <BottomBar
+        onScanPress={onNavigateToScan}
+        onHomePress={onNavigateToHome}
+        onCalendarPress={onNavigateToCalendar}
+        onAIChatPress={onNavigateToAskMora}
+        onDoctorPress={onNavigateToUserProfile}
+        activeTab="home"
+      />
     </SafeAreaView>
   );
 };

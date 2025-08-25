@@ -1,14 +1,16 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   SafeAreaView,
   StatusBar,
-  Animated,
   Dimensions,
   Alert,
+  Image,
+  ScrollView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import Navbar from './Navbar';
 import BottomBar from './BottomBar';
@@ -23,21 +25,61 @@ interface HomePageProps {
   onNavigateToAskMora?: () => void;
   onNavigateToHistory?: () => void;
   onStartScan?: () => void;
-  onStartBreastScan?: () => void;
   onLogout?: () => void;
   onNavigateToUserProfile?: () => void;
+  onNavigateToCalendar?: () => void;
 }
 
 const HomePage: React.FC<HomePageProps> = ({
   onNavigateToAskMora,
   onNavigateToHistory,
   onStartScan,
-  onStartBreastScan,
   onLogout,
   onNavigateToUserProfile,
+  onNavigateToCalendar,
 }) => {
   const { user, logout } = useAuth();
   const [displayName, setDisplayName] = useState<string | null>(null);
+
+  // Breast Health Care Cards Data
+  const breastHealthCards = [
+    {
+      id: 1,
+      title: 'Breast Care Tips',
+      description: 'Regular self-exams and healthy lifestyle choices',
+      image: require('../assets/love.png'),
+      backgroundColor: '#FFE5F0',
+      titleColor: '#D63384',
+      shadowColor: '#FFB6C1',
+    },
+    {
+      id: 2,
+      title: 'Wellness Practices',
+      description: 'Balanced nutrition, exercise, and stress management',
+      image: require('../assets/fruits.png'),
+      backgroundColor: '#E6F7FF',
+      titleColor: '#0066CC',
+      shadowColor: '#87CEEB',
+    },
+    {
+      id: 3,
+      title: 'Early Detection',
+      description: 'Monthly self-exams and annual check-ups',
+      image: require('../assets/breast.png'),
+      backgroundColor: '#F0F8FF',
+      titleColor: '#8A2BE2',
+      shadowColor: '#DDA0DD',
+    },
+    {
+      id: 4,
+      title: 'Healthy Habits',
+      description: 'Limit alcohol, maintain weight, stay active',
+      image: require('../assets/alcohol.png'),
+      backgroundColor: '#FFF5EE',
+      titleColor: '#FF8C00',
+      shadowColor: '#FFB347',
+    },
+  ];
 
   useEffect(() => {
     let mounted = true;
@@ -45,7 +87,7 @@ const HomePage: React.FC<HomePageProps> = ({
       try {
         if (!user) return;
         const snap = await getDoc(doc(db, 'users', user.uid));
-        const name = snap.data()?.profile?.name as string | undefined;
+        const name = snap.data()?.onboarding?.name as string | undefined;
         if (mounted) setDisplayName(name ?? null);
       } catch {}
     };
@@ -62,6 +104,15 @@ const HomePage: React.FC<HomePageProps> = ({
       <Navbar
         title=" "
         showLogo={true}
+        userProfile={{
+          name: displayName || user?.email?.split('@')[0] || 'User',
+          image: undefined, // You can add user profile image here later
+          onPress: onNavigateToUserProfile,
+        }}
+        onNotificationPress={() => {
+          // Handle notification press - you can implement this later
+          console.log('Notification pressed');
+        }}
         rightAction={{
           label: 'Logout',
           onPress: () => {
@@ -81,199 +132,468 @@ const HomePage: React.FC<HomePageProps> = ({
         }}
       />
 
-      {/* Greeting Section with Animated Background */}
-      <View
-        style={{
-          flex: 1,
-          alignItems: 'center',
-          justifyContent: 'center',
-          paddingHorizontal: isSmallDevice ? 16 : isMediumDevice ? 20 : 24,
-          paddingTop: isSmallDevice ? 20 : 24,
-        }}>
-        {/* Container for greeting text with animated background */}
+      <ScrollView
+        style={{ flex: 1 }}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}>
+        {/* Arbitrary Shaped Background Bubble */}
         <View
           style={{
-            position: 'relative',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}>
+            position: 'absolute',
+            top: 120,
+            right: -50,
+            width: 200,
+            height: 250,
+            backgroundColor: '#f3e3fc',
+            borderRadius: 100,
+            transform: [{ rotate: '25deg' }, { scaleX: 1.5 }, { scaleY: 0.8 }],
+            opacity: 0.7,
+            zIndex: 0,
+          }}
+        />
 
-          {/* Greeting Text */}
-          <View style={{ alignItems: 'center' }}>
+        {/* Another decorative bubble */}
+        <View
+          style={{
+            position: 'absolute',
+            top: 300,
+            left: -30,
+            width: 150,
+            height: 180,
+            backgroundColor: '#f3e3fc',
+            borderRadius: 75,
+            transform: [{ rotate: '-15deg' }, { scaleX: 0.8 }, { scaleY: 1.2 }],
+            opacity: 0.5,
+            zIndex: 0,
+          }}
+        />
+
+        {/* Enhanced Horizontal Streak Counter - positioned below navbar */}
+        <View
+          style={{
+            marginHorizontal: isSmallDevice ? 16 : isMediumDevice ? 20 : 24,
+            marginTop: isSmallDevice ? 20 : 24,
+            marginBottom: isSmallDevice ? 24 : 28,
+          }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              paddingHorizontal: isSmallDevice ? 20 : 24,
+              paddingVertical: isSmallDevice ? 16 : 20,
+              backgroundColor: '#E6E6FA',
+              borderRadius: 16,
+              borderWidth: 1,
+              borderColor: '#D2AAF7',
+              shadowColor: '#D2AAF7',
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.15,
+              shadowRadius: 12,
+              elevation: 8,
+            }}>
+            {/* Left side - Streak info */}
+            <View style={{ flex: 1 }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                <Image
+                  source={require('../assets/fire.png')}
+                  style={{ width: 30, height: 30 }}
+                  resizeMode="contain"
+                />
+                <Text
+                  style={{
+                    fontSize: isSmallDevice ? 22 : 26,
+                    fontWeight: '800',
+                    color: '#333333',
+                  }}>
+                  7
+                </Text>
+                <Text
+                  style={{
+                    fontSize: isSmallDevice ? 16 : 18,
+                    fontWeight: '700',
+                    color: '#333',
+                    marginLeft: 6,
+                  }}>
+                  day streak!
+                </Text>
+              </View>
+
+              <Text
+                style={{
+                  fontSize: isSmallDevice ? 12 : 14,
+                  fontWeight: '500',
+                  color: '#666',
+                  opacity: 0.8,
+                }}>
+                Keep up the great work! 💜
+              </Text>
+            </View>
+
+            {/* Right side - Progress section */}
+            <View style={{ alignItems: 'center', minWidth: isSmallDevice ? 100 : 120 }}>
+              {/* Circular progress indicator */}
+              <View
+                style={{
+                  width: isSmallDevice ? 48 : 56,
+                  height: isSmallDevice ? 48 : 56,
+                  borderRadius: isSmallDevice ? 24 : 28,
+                  borderWidth: 4,
+                  borderColor: '#9992E1',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  marginBottom: 8,
+                  position: 'relative',
+                }}>
+                {/* Progress circle */}
+                <View
+                  style={{
+                    position: 'absolute',
+                    width: '100%',
+                    height: '100%',
+                    overflow: 'visible',
+                    borderRadius: isSmallDevice ? 24 : 28,
+                    borderWidth: 4,
+                    borderColor: 'transparent',
+                    borderTopColor: '#EB9DED',
+                    borderRightColor: '#EB9DED',
+                    borderBottomColor: screenWidth > 400 ? '#EB9DED' : 'transparent', // 70% progress
+                    transform: [{ rotate: '-90deg' }],
+                  }}
+                />
+                <Text
+                  style={{
+                    fontSize: isSmallDevice ? 12 : 14,
+                    fontWeight: '700',
+                    color: '#9992E1',
+                  }}>
+                  70%
+                </Text>
+              </View>
+
+              <Text
+                style={{
+                  fontSize: isSmallDevice ? 10 : 12,
+                  fontWeight: '600',
+                  color: '#666',
+                  textAlign: 'center',
+                }}>
+                7/10 days
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Greeting Section - Left aligned below streak counter */}
+        <View
+          style={{
+            paddingHorizontal: isSmallDevice ? 16 : isMediumDevice ? 20 : 24,
+            marginBottom: isSmallDevice ? 24 : 28,
+          }}>
+          <View style={{ alignItems: 'flex-start' }}>
             <Text
               style={{
-                marginBottom: isSmallDevice ? 6 : 10,
-                textAlign: 'center',
+                marginBottom: isSmallDevice ? 8 : 10,
                 fontSize: isSmallDevice ? 18 : isMediumDevice ? 20 : 22,
                 fontWeight: '600',
                 color: 'black',
               }}>
-              Hi <Text style={{ color: '#FF9DF1' }}>{displayName || user?.email?.split('@')[0] || 'User'}!</Text>
+              Hi{' '}
+              <Text style={{ color: '#FF9DF1' }}>
+                {displayName || user?.email?.split('@')[0] || 'User'}!
+              </Text>
             </Text>
             <Text
               style={{
-                marginBottom: isSmallDevice ? 6 : 10,
-                textAlign: 'center',
-                fontSize: isSmallDevice ? 12 : 14,
-                color: 'black',
+                marginBottom: isSmallDevice ? 6 : 8,
+                fontSize: isSmallDevice ? 14 : 16,
+                color: '#666',
+                lineHeight: isSmallDevice ? 20 : 22,
               }}>
               Your past scan showed no concerns.
             </Text>
             <Text
               style={{
-                textAlign: 'center',
-                fontSize: isSmallDevice ? 12 : 14,
+                fontSize: isSmallDevice ? 14 : 16,
                 fontWeight: '500',
                 color: '#FF9DF1',
+                lineHeight: isSmallDevice ? 20 : 22,
               }}>
               Ready for today&apos;s quick check?
             </Text>
           </View>
         </View>
-      </View>
 
-      {/* Divider Lines */}
-      <View
-        style={{
-          marginVertical: isSmallDevice ? 8 : 12,
-          paddingHorizontal: isSmallDevice ? 16 : isMediumDevice ? 20 : 24,
-        }}>
+        {/* Main Content Area */}
         <View
           style={{
-            marginBottom: 2,
-            height: 2,
-            backgroundColor: '#BFC3E9',
-            borderRadius: 1,
-          }}></View>
+            justifyContent: 'center',
+            paddingHorizontal: isSmallDevice ? 16 : isMediumDevice ? 20 : 24,
+            marginBottom: isSmallDevice ? 24 : 28,
+          }}>
+          {/* Enhanced Action Buttons */}
+          <View
+            style={{
+              paddingHorizontal: isSmallDevice ? 16 : isMediumDevice ? 20 : 24,
+              paddingBottom: isSmallDevice ? 20 : 24,
+              gap: isSmallDevice ? 16 : 20,
+            }}>
+            {/* Start Scan - Primary Action */}
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderRadius: 20,
+                borderColor: '#33333',
+                borderWidth: 1,
+                backgroundColor: '#F7ECFD',
+                paddingHorizontal: isSmallDevice ? 20 : 24,
+                paddingVertical: isSmallDevice ? 16 : 18,
+                shadowColor: '#F7ECFD',
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.3,
+                shadowRadius: 10,
+                elevation: 8,
+              }}
+              onPress={onStartScan}>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: isSmallDevice ? 16 : 18,
+                    fontWeight: '700',
+                    color: '#33333',
+                    marginBottom: 2,
+                  }}>
+                  Start Self Scan
+                </Text>
+                <Text
+                  style={{
+                    fontSize: isSmallDevice ? 12 : 13,
+                    fontWeight: '400',
+                    color: '#33333',
+                    opacity: 0.9,
+                  }}>
+                  Quick 2-minute health check
+                </Text>
+              </View>
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: '#333333',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                <Ionicons name="scan-outline" size={20} color="#FFFFFF" />
+              </View>
+            </TouchableOpacity>
+
+            {/* View History */}
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderRadius: 20,
+                borderColor: '#33333',
+                backgroundColor: '#F7ECFD',
+                paddingHorizontal: isSmallDevice ? 20 : 24,
+                paddingVertical: isSmallDevice ? 16 : 18,
+                shadowColor: '#F7ECFD',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 8,
+                elevation: 4,
+                borderWidth: 1,
+              }}
+              onPress={onNavigateToHistory}>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: isSmallDevice ? 16 : 18,
+                    fontWeight: '600',
+                    color: '#333',
+                    marginBottom: 2,
+                  }}>
+                  View my History
+                </Text>
+                <Text
+                  style={{
+                    fontSize: isSmallDevice ? 12 : 13,
+                    fontWeight: '400',
+                    color: '#666',
+                  }}>
+                  Track your health journey
+                </Text>
+              </View>
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: '#333333',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                <Ionicons name="time-outline" size={20} color="#FFFFFF" />
+              </View>
+            </TouchableOpacity>
+
+            {/* Ask Mora */}
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                borderRadius: 20,
+                borderColor: '#33333',
+                backgroundColor: '#F7ECFD',
+                paddingHorizontal: isSmallDevice ? 20 : 24,
+                paddingVertical: isSmallDevice ? 16 : 18,
+                shadowColor: '#F7ECFD',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 8,
+                elevation: 4,
+                borderWidth: 1,
+              }}
+              onPress={onNavigateToAskMora}>
+              <View style={{ flex: 1 }}>
+                <Text
+                  style={{
+                    fontSize: isSmallDevice ? 16 : 18,
+                    fontWeight: '600',
+                    color: '#333',
+                    marginBottom: 2,
+                  }}>
+                  Ask Mora
+                </Text>
+                <Text
+                  style={{
+                    fontSize: isSmallDevice ? 12 : 13,
+                    fontWeight: '400',
+                    color: '#666',
+                  }}>
+                  Get personalized health advice
+                </Text>
+              </View>
+              <View
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: 20,
+                  backgroundColor: '#333333',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                <Ionicons name="chatbubble-ellipses-outline" size={20} color="#FFFFFF" />
+              </View>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Breast Health Care Cards Section */}
         <View
           style={{
-            height: 2,
-            backgroundColor: '#BFC3E9',
-            borderRadius: 1,
-          }}></View>
-      </View>
-
-      {/* Action Buttons */}
-      <View
-        style={{
-          flex: 1,
-          justifyContent: 'center',
-          paddingHorizontal: isSmallDevice ? 16 : isMediumDevice ? 20 : 24,
-          gap: isSmallDevice ? 10 : 14,
-        }}>
-        {/* Start Scan */}
-        <TouchableOpacity
-          style={{
-            alignItems: 'center',
-            borderRadius: 24,
-            borderWidth: 1,
-            borderColor: '#000000',
-            backgroundColor: '#D2AAF7',
-            paddingHorizontal: isSmallDevice ? 16 : isMediumDevice ? 18 : 20,
-            paddingVertical: isSmallDevice ? 10 : 12,
-            shadowColor: '#D2AAF7',
-            shadowOffset: { width: 0, height: 3 },
-            shadowOpacity: 0.25,
-            shadowRadius: 6,
-            elevation: 6,
-          }}
-          onPress={onStartScan}>
+            marginHorizontal: isSmallDevice ? 16 : isMediumDevice ? 20 : 24,
+            marginBottom: isSmallDevice ? 24 : 28,
+          }}>
           <Text
             style={{
-              fontSize: isSmallDevice ? 12 : 14,
-              fontWeight: '600',
-              color: '#111',
+              fontSize: isSmallDevice ? 18 : 20,
+              fontWeight: '700',
+              color: '#333',
+              marginBottom: isSmallDevice ? 20 : 24,
+              textAlign: 'center',
             }}>
-            Start Self Scan
+            Breast Health Care
           </Text>
-        </TouchableOpacity>
 
-        {/* Start Breast Scan */}
-        <TouchableOpacity
-          style={{
-            alignItems: 'center',
-            borderRadius: 24,
-            borderWidth: 1,
-            borderColor: '#000000',
-            backgroundColor: '#14b8a6',
-            paddingHorizontal: isSmallDevice ? 16 : isMediumDevice ? 18 : 20,
-            paddingVertical: isSmallDevice ? 10 : 12,
-            shadowColor: '#14b8a6',
-            shadowOffset: { width: 0, height: 3 },
-            shadowOpacity: 0.25,
-            shadowRadius: 6,
-            elevation: 6,
-          }}
-          onPress={onStartBreastScan}>
-          <Text
-            style={{
-              fontSize: isSmallDevice ? 12 : 14,
-              fontWeight: '600',
-              color: '#fff',
-            }}>
-            🔬 Start Breast Scan
-          </Text>
-        </TouchableOpacity>
-
-        {/* View History */}
-        <TouchableOpacity
-          style={{
-            alignItems: 'center',
-            borderRadius: 24,
-            borderWidth: 1,
-            borderColor: '#000000',
-            backgroundColor: '#E7B8FF',
-            paddingHorizontal: isSmallDevice ? 16 : isMediumDevice ? 18 : 20,
-            paddingVertical: isSmallDevice ? 10 : 12,
-            shadowColor: '#E7B8FF',
-            shadowOffset: { width: 0, height: 3 },
-            shadowOpacity: 0.25,
-            shadowRadius: 6,
-            elevation: 6,
-          }}
-          onPress={onNavigateToHistory}>
-          <Text
-            style={{
-              fontSize: isSmallDevice ? 12 : 14,
-              fontWeight: '600',
-              color: '#111',
-            }}>
-            View my History
-          </Text>
-        </TouchableOpacity>
-
-        {/* Ask Mora */}
-        <TouchableOpacity
-          style={{
-            alignItems: 'center',
-            borderRadius: 24,
-            borderWidth: 1,
-            borderColor: '#000000',
-            backgroundColor: '#F2C6FF',
-            paddingHorizontal: isSmallDevice ? 16 : isMediumDevice ? 18 : 20,
-            paddingVertical: isSmallDevice ? 10 : 12,
-            shadowColor: '#F2C6FF',
-            shadowOffset: { width: 0, height: 3 },
-            shadowOpacity: 0.25,
-            shadowRadius: 6,
-            elevation: 6,
-          }}
-          onPress={onNavigateToAskMora}>
-          <Text
-            style={{
-              fontSize: isSmallDevice ? 12 : 14,
-              fontWeight: '600',
-              color: '#111',
-            }}>
-            Ask Mora
-          </Text>
-        </TouchableOpacity>
-      </View>
+          <View style={{ height: 140 }}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={{
+                paddingHorizontal: 8,
+                gap: 16,
+              }}
+              decelerationRate="fast"
+              snapToInterval={200}
+              snapToAlignment="start">
+              {breastHealthCards.map((card) => (
+                <View
+                  key={card.id}
+                  style={{
+                    width: 140,
+                    height: 140,
+                    borderRadius: 16,
+                    overflow: 'hidden',
+                    shadowColor: card.shadowColor,
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
+                    elevation: 6,
+                    backgroundColor: card.backgroundColor,
+                  }}>
+                  <Image
+                    source={card.image}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                    }}
+                    resizeMode="cover"
+                  />
+                  <View
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      right: 0,
+                      padding: 12,
+                      borderBottomLeftRadius: 16,
+                      borderBottomRightRadius: 16,
+                    }}>
+                    <Text
+                      style={{
+                        fontSize: 14,
+                        fontWeight: '700',
+                        color: '#333',
+                        marginBottom: 4,
+                       
+                      }}>
+                      {card.title}
+                    </Text>
+                    <Text
+                      style={{
+                        fontSize: 11,
+                        fontWeight: '500',
+                        color: '#333333',
+                        lineHeight: 14,
+                      
+                      }}>
+                      {card.description}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </ScrollView>
 
       <BottomBar
         onScanPress={onStartScan}
         onHomePress={() => {}}
-        onProfilePress={onNavigateToUserProfile}
+        onCalendarPress={onNavigateToCalendar}
+        onAIChatPress={onNavigateToAskMora}
+        onDoctorPress={onNavigateToUserProfile}
         activeTab="home"
       />
     </SafeAreaView>

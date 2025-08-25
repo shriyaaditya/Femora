@@ -1,6 +1,5 @@
 import * as FileSystem from 'expo-file-system';
-import { Buffer } from "buffer";
-
+import { Buffer } from 'buffer';
 
 // Simulated backend service for breast scan image processing
 export class BackendService {
@@ -68,7 +67,7 @@ export class BackendService {
 
       // Step 2: Generate unique filename
       const filename = `breast-scan-${Date.now()}-${Math.random().toString(36).substr(2, 9)}.enc`;
-      
+
       // Step 3: Upload to GCS (simulated)
       console.log('Uploading to GCS...');
       await this.simulateProcessing(1500);
@@ -127,7 +126,7 @@ export class BackendService {
   async cleanupTempFiles(filePaths: string[]): Promise<void> {
     try {
       console.log('Cleaning up temporary files...');
-      
+
       for (const filePath of filePaths) {
         try {
           await FileSystem.deleteAsync(filePath);
@@ -147,7 +146,7 @@ export class BackendService {
 
   // Private helper methods
   private simulateProcessing(delay: number): Promise<void> {
-    return new Promise(resolve => setTimeout(resolve, delay));
+    return new Promise((resolve) => setTimeout(resolve, delay));
   }
 
   private simulateEncryption(data: string): string {
@@ -161,7 +160,7 @@ export class BackendService {
       'Minor tissue density variations observed',
       'Normal breast tissue architecture',
       'No suspicious masses or calcifications',
-      'Symmetrical breast tissue distribution'
+      'Symmetrical breast tissue distribution',
     ];
     return findings[Math.floor(Math.random() * findings.length)];
   }
@@ -177,7 +176,7 @@ export class BackendService {
       'Monitor for any changes. Consider follow-up scan in 3 months.',
       'Maintain current screening schedule. No immediate action required.',
       'Continue healthy lifestyle practices. Annual screening recommended.',
-      'Schedule consultation with healthcare provider for personalized advice.'
+      'Schedule consultation with healthcare provider for personalized advice.',
     ];
     return recommendations[Math.floor(Math.random() * recommendations.length)];
   }
@@ -192,11 +191,10 @@ export class BackendService {
 
     // In production, send to your logging service
     console.log('🔒 [BackendService]', logEntry);
-    
+
     // You could also send to Firebase Analytics, Crashlytics, etc.
     // analytics.logEvent('backend_process', logEntry);
   }
 }
 
 export default BackendService.getInstance();
-

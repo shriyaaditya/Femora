@@ -15,9 +15,17 @@ import BottomBar from './BottomBar';
 
 interface UserProfileProps {
   onNavigateToHome: () => void;
+  onNavigateToCalendar?: () => void;
+  onNavigateToAskMora?: () => void;
+  onNavigateToScan?: () => void;
 }
 
-const UserProfile: React.FC<UserProfileProps> = ({ onNavigateToHome }) => {
+const UserProfile: React.FC<UserProfileProps> = ({
+  onNavigateToHome,
+  onNavigateToCalendar,
+  onNavigateToAskMora,
+  onNavigateToScan,
+}) => {
   const { user, logout } = useAuth();
 
   // Mock user profile data - replace with actual data from Firebase
@@ -120,7 +128,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onNavigateToHome }) => {
         {/* Action Buttons */}
         <View className="mb-6 space-y-3">
           <TouchableOpacity
-            className="rounded-2xl bg-[#EB9DED] py-3 mb-4"
+            className="mb-4 rounded-2xl bg-[#EB9DED] py-3"
             onPress={() => {
               // TODO: Navigate to edit profile
               Alert.alert('Edit Profile', 'Edit profile functionality coming soon!');
@@ -129,7 +137,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onNavigateToHome }) => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="rounded-2xl border border-[#EB9DED] bg-white py-3 mb-4"
+            className="mb-4 rounded-2xl border border-[#EB9DED] bg-white py-3"
             onPress={() => {
               // TODO: Navigate to privacy settings
               Alert.alert('Privacy Settings', 'Privacy settings coming soon!');
@@ -138,7 +146,7 @@ const UserProfile: React.FC<UserProfileProps> = ({ onNavigateToHome }) => {
           </TouchableOpacity>
 
           <TouchableOpacity
-            className="rounded-2xl border border-[#EB9DED] bg-white py-3 mb-4"
+            className="mb-4 rounded-2xl border border-[#EB9DED] bg-white py-3"
             onPress={() => {
               // TODO: Navigate to help/support
               Alert.alert('Help & Support', 'Help and support coming soon!');
@@ -149,10 +157,12 @@ const UserProfile: React.FC<UserProfileProps> = ({ onNavigateToHome }) => {
       </ScrollView>
 
       <BottomBar
-        onScanPress={() => {}} // Scan is not active here
+        onScanPress={onNavigateToScan}
         onHomePress={onNavigateToHome}
-        onProfilePress={() => {}} // Profile is already active
-        activeTab="profile"
+        onCalendarPress={onNavigateToCalendar}
+        onAIChatPress={onNavigateToAskMora}
+        onDoctorPress={() => {}}
+        activeTab="doctor"
       />
     </SafeAreaView>
   );

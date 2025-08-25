@@ -1,6 +1,6 @@
 import './global.css';
 import React, { useEffect, useState } from 'react';
-import { View, Text, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import * as NavigationBar from 'expo-navigation-bar';
 import HomePage from './components/HomePage';
 import AskMora from './components/AskMora';
@@ -9,13 +9,25 @@ import ViewHistory from './components/ViewHistory';
 import UserProfile from './components/UserProfile';
 import Onboarding from './components/Onboarding';
 import BreastScan from './components/BreastScan';
+import ScanReport from './components/ScanReport';
+import ScanResults from './components/ScanResults';
+import Calendar from './components/Calendar';
 import Login from './components/Login';
 import LoadingPage from './components/LoadingPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 
 function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<
-    'home' | 'askMora' | 'questionnaire' | 'viewHistory' | 'userProfile' | 'onboarding' | 'breastScan' | 'scanReport'
+    | 'home'
+    | 'askMora'
+    | 'questionnaire'
+    | 'viewHistory'
+    | 'userProfile'
+    | 'onboarding'
+    | 'breastScan'
+    | 'scanReport'
+    | 'calendar'
+    | 'scanResults'
   >('home');
   const [scanId, setScanId] = useState<string>('');
   const [showLoading, setShowLoading] = useState(true);
@@ -35,7 +47,7 @@ function AppContent() {
       const timer = setTimeout(() => {
         setShowLoading(false);
       }, 2000); // Show loading for 2 seconds after auth is complete
-      
+
       return () => clearTimeout(timer);
     }
   }, [loading]);
@@ -73,9 +85,18 @@ function AppContent() {
     setCurrentScreen('userProfile');
   };
 
+  const handleNavigateToCalendar = () => {
+    setCurrentScreen('calendar');
+  };
+
   const handleNavigateToReport = (id: string) => {
     setScanId(id);
     setCurrentScreen('scanReport');
+  };
+
+  const handleNavigateToScanResults = (id: string) => {
+    setScanId(id);
+    setCurrentScreen('scanResults');
   };
 
   // Show loading screen while checking authentication or during the delay
@@ -96,29 +117,84 @@ function AppContent() {
           onNavigateToAskMora={handleNavigateToAskMora}
           onNavigateToHistory={handleNavigateToHistory}
           onStartScan={handleStartScan}
-          onStartBreastScan={handleStartBreastScan}
           onLogout={handleLogout}
           onNavigateToUserProfile={handleNavigateToUserProfile}
+          onNavigateToCalendar={handleNavigateToCalendar}
         />
       )}
       {currentScreen === 'askMora' && (
-        <AskMora onNavigateToHome={handleNavigateToHome} onNavigateToUserProfile={handleNavigateToUserProfile} />
-      )}
-      {currentScreen === 'questionnaire' && (
-        <Questionnaire onNavigateToHome={handleNavigateToHome} onNavigateToUserProfile={handleNavigateToUserProfile} />
-      )}
-      {currentScreen === 'viewHistory' && (
-        <ViewHistory onNavigateToHome={handleNavigateToHome} onNavigateToUserProfile={handleNavigateToUserProfile} />
-      )}
-      {currentScreen === 'userProfile' && <UserProfile onNavigateToHome={handleNavigateToHome} />}
-      {currentScreen === 'onboarding' && <Onboarding onComplete={handleNavigateToHome} onBackToHome={handleNavigateToHome} />}
-      {currentScreen === 'breastScan' && (
-        <BreastScan 
-          onNavigateToHome={handleNavigateToHome} 
-          onNavigateToReport={handleNavigateToReport} 
+        <AskMora
+          onNavigateToHome={handleNavigateToHome}
+          onNavigateToUserProfile={handleNavigateToUserProfile}
+          onNavigateToCalendar={handleNavigateToCalendar}
+          onNavigateToScan={handleStartScan}
         />
       )}
-      
+      {currentScreen === 'questionnaire' && (
+        <Questionnaire
+          onNavigateToHome={handleNavigateToHome}
+          onNavigateToUserProfile={handleNavigateToUserProfile}
+          onStartBreastScan={handleStartBreastScan}
+          onNavigateToCalendar={handleNavigateToCalendar}
+          onNavigateToAskMora={handleNavigateToAskMora}
+        />
+      )}
+      {currentScreen === 'viewHistory' && (
+        <ViewHistory
+          onNavigateToHome={handleNavigateToHome}
+          onNavigateToUserProfile={handleNavigateToUserProfile}
+          onNavigateToCalendar={handleNavigateToCalendar}
+          onNavigateToAskMora={handleNavigateToAskMora}
+          onNavigateToScan={handleStartScan}
+        />
+      )}
+      {currentScreen === 'userProfile' && (
+        <UserProfile
+          onNavigateToHome={handleNavigateToHome}
+          onNavigateToCalendar={handleNavigateToCalendar}
+          onNavigateToAskMora={handleNavigateToAskMora}
+          onNavigateToScan={handleStartScan}
+        />
+      )}
+      {currentScreen === 'onboarding' && (
+        <Onboarding onComplete={handleNavigateToHome} onBackToHome={handleNavigateToHome} />
+      )}
+      {currentScreen === 'breastScan' && (
+        <BreastScan
+          onNavigateToHome={handleNavigateToHome}
+          onNavigateToReport={handleNavigateToReport}
+          onNavigateToCalendar={handleNavigateToCalendar}
+        />
+      )}
+      {currentScreen === 'scanReport' && (
+        <ScanReport
+          scanId={scanId}
+          onNavigateToHome={handleNavigateToHome}
+          onNavigateToScan={handleStartScan}
+          onNavigateToCalendar={handleNavigateToCalendar}
+          onNavigateToAskMora={handleNavigateToAskMora}
+        />
+      )}
+      {currentScreen === 'scanResults' && (
+        <ScanResults
+          scanId={scanId}
+          onNavigateToHome={handleNavigateToHome}
+          onNavigateToUserProfile={handleNavigateToUserProfile}
+          onNavigateToCalendar={handleNavigateToCalendar}
+          onNavigateToAskMora={handleNavigateToAskMora}
+        />
+      )}
+
+      {currentScreen === 'calendar' && (
+        <Calendar
+          onNavigateToHome={handleNavigateToHome}
+          onNavigateToUserProfile={handleNavigateToUserProfile}
+          onNavigateToReport={handleNavigateToReport}
+          onNavigateToAskMora={handleNavigateToAskMora}
+          onNavigateToScan={handleStartScan}
+          onNavigateToScanResults={handleNavigateToScanResults}
+        />
+      )}
     </>
   );
 }

@@ -1,15 +1,15 @@
 // Configuration for the Python backend
 const BACKEND_CONFIG = {
   // Replace with your actual backend URL
-  baseUrl: 'http://localhost:8000/api',  // Local development
+  baseUrl: 'http://localhost:8000/api', // Local development
   // baseUrl: 'https://your-python-backend.com/api',  // Production
-  
+
   endpoints: {
     upload: '/upload-image',
     process: '/process-image',
     status: '/status',
   },
-  
+
   // AES-256 key (should be stored securely in production)
   encryptionKey: 'your-base64-encryption-key-here',
 };
@@ -54,7 +54,7 @@ export class SecureImageService {
   async uploadImage(base64Image: string, metadata: any = {}): Promise<ImageUploadResponse> {
     try {
       console.log('🔄 Starting secure image upload...');
-      
+
       // Prepare the request payload
       const payload = {
         image: base64Image,
@@ -72,7 +72,7 @@ export class SecureImageService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await this.getAuthToken()}`,
+          Authorization: `Bearer ${await this.getAuthToken()}`,
         },
         body: JSON.stringify(payload),
       });
@@ -83,7 +83,7 @@ export class SecureImageService {
 
       const result: ImageUploadResponse = await response.json();
       console.log('✅ Image upload successful:', result);
-      
+
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -97,12 +97,15 @@ export class SecureImageService {
    */
   async getProcessingStatus(processingId: string): Promise<ProcessingStatus> {
     try {
-      const response = await fetch(`${this.baseUrl}${BACKEND_CONFIG.endpoints.status}/${processingId}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${await this.getAuthToken()}`,
-        },
-      });
+      const response = await fetch(
+        `${this.baseUrl}${BACKEND_CONFIG.endpoints.status}/${processingId}`,
+        {
+          method: 'GET',
+          headers: {
+            Authorization: `Bearer ${await this.getAuthToken()}`,
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -123,7 +126,7 @@ export class SecureImageService {
   async processImageDirectly(base64Image: string, metadata: any = {}): Promise<ProcessingStatus> {
     try {
       console.log('🔬 Processing image directly...');
-      
+
       const payload = {
         image: base64Image,
         metadata: {
@@ -140,7 +143,7 @@ export class SecureImageService {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${await this.getAuthToken()}`,
+          Authorization: `Bearer ${await this.getAuthToken()}`,
         },
         body: JSON.stringify(payload),
       });
@@ -151,7 +154,7 @@ export class SecureImageService {
 
       const result: ProcessingStatus = await response.json();
       console.log('✅ Direct processing completed:', result);
-      
+
       return result;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);

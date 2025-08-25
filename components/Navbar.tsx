@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, Image, Dimensions } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width: screenWidth } = Dimensions.get('window');
 const isSmallDevice = screenWidth < 375;
@@ -14,9 +15,22 @@ interface NavbarProps {
     style?: 'primary' | 'secondary' | 'danger' | 'destructive';
   };
   showLogo?: boolean;
+  userProfile?: {
+    name: string;
+    image?: string;
+    onPress?: () => void;
+  };
+  onNotificationPress?: () => void;
 }
 
-const Navbar: React.FC<NavbarProps> = ({ title, onBack, rightAction, showLogo = false }) => {
+const Navbar: React.FC<NavbarProps> = ({
+  title,
+  onBack,
+  rightAction,
+  showLogo = false,
+  userProfile,
+  onNotificationPress,
+}) => {
   return (
     <View
       style={{
@@ -101,33 +115,89 @@ const Navbar: React.FC<NavbarProps> = ({ title, onBack, rightAction, showLogo = 
           {title}
         </Text>
 
-        {/* Right: Action Button or Spacer */}
-        {rightAction ? (
-          <TouchableOpacity
-            style={{
-              paddingHorizontal: isSmallDevice ? 12 : 16,
-              paddingVertical: isSmallDevice ? 8 : 12,
-              borderRadius: 20,
-              backgroundColor:
-                rightAction.style === 'danger'
-                  ? 'rgba(255, 59, 48, 0.25)'
-                  : rightAction.style === 'secondary'
-                  ? 'rgba(0,0,0,0.06)'
-                  : 'rgba(0,0,0,0.06)',
-            }}
-            onPress={rightAction.onPress}>
-            <Text
+        {/* Right: Notification Bell and User Profile */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          {/* Notification Bell */}
+          {onNotificationPress && (
+            <TouchableOpacity
               style={{
-                fontSize: isSmallDevice ? 14 : 16,
-                fontWeight: '500',
-                color: '#111',
-              }}>
-              {rightAction.label}
-            </Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={{ width: isSmallDevice ? 36 : 40 }} />
-        )}
+                height: isSmallDevice ? 40 : 44,
+                width: isSmallDevice ? 40 : 44,
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: 22,
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              }}
+              onPress={onNotificationPress}>
+              <Ionicons name="notifications" size={isSmallDevice ? 20 : 22} color="#FFFFFF" />
+            </TouchableOpacity>
+          )}
+
+          {/* User Profile or Right Action */}
+          {userProfile ? (
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: 8,
+                paddingHorizontal: 12,
+                paddingVertical: 8,
+                borderRadius: 24,
+                backgroundColor: 'rgba(255, 255, 255, 0.2)',
+              }}
+              onPress={userProfile.onPress}>
+              <Image
+                source={
+                  userProfile.image ? { uri: userProfile.image } : require('../assets/mora.png')
+                }
+                style={{
+                  width: isSmallDevice ? 28 : 32,
+                  height: isSmallDevice ? 28 : 32,
+                  borderRadius: 16,
+                  borderWidth: 2,
+                  borderColor: 'rgba(255, 255, 255, 0.3)',
+                }}
+                resizeMode="cover"
+              />
+              <Text
+                style={{
+                  fontSize: isSmallDevice ? 13 : 14,
+                  fontWeight: '600',
+                  color: '#FFFFFF',
+                  textShadowColor: 'rgba(0, 0, 0, 0.1)',
+                  textShadowOffset: { width: 0, height: 1 },
+                  textShadowRadius: 2,
+                }}>
+                {userProfile.name}
+              </Text>
+            </TouchableOpacity>
+          ) : rightAction ? (
+            <TouchableOpacity
+              style={{
+                paddingHorizontal: isSmallDevice ? 12 : 16,
+                paddingVertical: isSmallDevice ? 8 : 12,
+                borderRadius: 20,
+                backgroundColor:
+                  rightAction.style === 'danger'
+                    ? 'rgba(255, 59, 48, 0.25)'
+                    : rightAction.style === 'secondary'
+                      ? 'rgba(0,0,0,0.06)'
+                      : 'rgba(0,0,0,0.06)',
+              }}
+              onPress={rightAction.onPress}>
+              <Text
+                style={{
+                  fontSize: isSmallDevice ? 14 : 16,
+                  fontWeight: '500',
+                  color: '#111',
+                }}>
+                {rightAction.label}
+              </Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: isSmallDevice ? 40 : 44 }} />
+          )}
+        </View>
       </View>
     </View>
   );

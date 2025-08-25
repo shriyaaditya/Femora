@@ -23,10 +23,19 @@ interface Message {
 
 interface AskMoraPageProps {
   onNavigateToHome?: () => void;
+  onNavigateToAskMora?: () => void;
   onNavigateToUserProfile?: () => void;
+  onNavigateToCalendar?: () => void;
+  onNavigateToScan?: () => void;
 }
 
-const AskMoraPage: React.FC<AskMoraPageProps> = ({ onNavigateToHome, onNavigateToUserProfile }) => {
+const AskMoraPage: React.FC<AskMoraPageProps> = ({
+  onNavigateToHome,
+  onNavigateToAskMora,
+  onNavigateToUserProfile,
+  onNavigateToCalendar,
+  onNavigateToScan,
+}) => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
 
@@ -90,11 +99,9 @@ const AskMoraPage: React.FC<AskMoraPageProps> = ({ onNavigateToHome, onNavigateT
 
               {/* Greeting Text */}
               <View className="mt-4 items-center">
-                <Text className=" mb-2 text-xl font-semibold">
-                  Hey there!
-                </Text>
+                <Text className=" mb-2 text-xl font-semibold">Hey there!</Text>
                 <Text className="text-center text-base leading-5 text-black">
-                  Mora here – your slightly fabulous piggy assistant!
+                  Mora here &ndash; your slightly fabulous piggy assistant!
                 </Text>
               </View>
             </View>
@@ -131,10 +138,12 @@ const AskMoraPage: React.FC<AskMoraPageProps> = ({ onNavigateToHome, onNavigateT
       </KeyboardAvoidingView>
 
       <BottomBar
-        onScanPress={() => {}} // Scan is not active here
+        onScanPress={onNavigateToScan}
         onHomePress={onNavigateToHome}
-        onProfilePress={onNavigateToUserProfile}
-        activeTab="home"
+        onAIChatPress={onNavigateToAskMora}
+        onDoctorPress={onNavigateToUserProfile}
+        onCalendarPress={onNavigateToCalendar}
+        activeTab="ai"
       />
     </SafeAreaView>
   );

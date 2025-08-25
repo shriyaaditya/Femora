@@ -4,8 +4,6 @@
     "slug": "my-expo-app",
     "version": "1.0.0",
 
-    
-
     "experiments": {
       "tsconfigPaths": true
     },
@@ -17,7 +15,6 @@
 
     "userInterfaceStyle": "light",
 
-    
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
@@ -39,7 +36,6 @@
           "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
-      
     },
     "scheme": "myexpoapp",
     "extra": {

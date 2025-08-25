@@ -17,12 +17,11 @@ const LoadingPage: React.FC<LoadingPageProps> = ({ message = 'Loading...' }) => 
           alignItems: 'center',
           paddingHorizontal: 20,
         }}>
-        
         {/* Pig Character */}
         <View style={styles.container}>
           <Image
             source={{
-              uri: "https://res.cloudinary.com/doojbkvn6/image/upload/v1755943252/Pig-Waving-Video-Generation-unscreen_vox5o7.gif",
+              uri: 'https://res.cloudinary.com/doojbkvn6/image/upload/v1755943252/Pig-Waving-Video-Generation-unscreen_vox5o7.gif',
             }}
             style={{ width: 150, height: 150 }}
           />

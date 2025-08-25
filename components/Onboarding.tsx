@@ -1,5 +1,15 @@
 import React, { useMemo, useState } from 'react';
-import { View, Text, TouchableOpacity, SafeAreaView, StatusBar, ScrollView, TextInput, Alert, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  SafeAreaView,
+  StatusBar,
+  ScrollView,
+  TextInput,
+  Alert,
+  Platform,
+} from 'react-native';
 import Navbar from './Navbar';
 import { useAuth } from '../contexts/AuthContext';
 import { db } from '../config/firebase';
@@ -29,15 +39,58 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => 
 
   const questions: QuestionDef[] = useMemo(
     () => [
-      { id: 'age', text: 'Hi! Can you tell us your age?', type: 'number', placeholder: 'Enter your age' },
-      { id: 'pastScan', text: 'Have you ever had a breast scan (mammogram or ultrasound) before?', type: 'yesno' },
-      { id: 'familyHistory', text: 'Do you have a family history of breast cancer (mother, sister, grandmother)?', type: 'yesno' },
-      { id: 'pastConditions', text: 'Have you ever had any breast conditions or surgeries (like cysts, fibroadenoma, biopsy)?', type: 'choice', options: ['No', 'Cysts', 'Fibroadenoma', 'Biopsy', 'Other'] },
-      { id: 'periodStartAge', text: 'At what age did your periods start?', type: 'number', placeholder: 'Enter age at menarche' },
-      { id: 'status', text: 'Are you currently pregnant, breastfeeding, or post-menopausal?', type: 'choice', options: ['None', 'Pregnant', 'Breastfeeding', 'Post-menopausal'] },
-      { id: 'hormonalMeds', text: 'Do you take any hormonal medication (birth control or hormone replacement therapy)?', type: 'yesno' },
+      {
+        id: 'name',
+        text: "What's your name?",
+        type: 'text',
+        placeholder: 'Enter your name',
+      },
+      {
+        id: 'age',
+        text: 'Hi! Can you tell us your age?',
+        type: 'number',
+        placeholder: 'Enter your age',
+      },
+      {
+        id: 'pastScan',
+        text: 'Have you ever had a breast scan (mammogram or ultrasound) before?',
+        type: 'yesno',
+      },
+      {
+        id: 'familyHistory',
+        text: 'Do you have a family history of breast cancer (mother, sister, grandmother)?',
+        type: 'yesno',
+      },
+      {
+        id: 'pastConditions',
+        text: 'Have you ever had any breast conditions or surgeries (like cysts, fibroadenoma, biopsy)?',
+        type: 'choice',
+        options: ['No', 'Cysts', 'Fibroadenoma', 'Biopsy', 'Other'],
+      },
+      {
+        id: 'periodStartAge',
+        text: 'At what age did your periods start?',
+        type: 'number',
+        placeholder: 'Enter age at menarche',
+      },
+      {
+        id: 'status',
+        text: 'Are you currently pregnant, breastfeeding, or post-menopausal?',
+        type: 'choice',
+        options: ['None', 'Pregnant', 'Breastfeeding', 'Post-menopausal'],
+      },
+      {
+        id: 'hormonalMeds',
+        text: 'Do you take any hormonal medication (birth control or hormone replacement therapy)?',
+        type: 'yesno',
+      },
       { id: 'smokeAlcohol', text: 'Do you smoke or drink alcohol regularly?', type: 'yesno' },
-      { id: 'chronic', text: 'Do you have any chronic health conditions, like diabetes or high blood pressure?', type: 'choice', options: ['None', 'Diabetes', 'High blood pressure', 'Other'] },
+      {
+        id: 'chronic',
+        text: 'Do you have any chronic health conditions, like diabetes or high blood pressure?',
+        type: 'choice',
+        options: ['None', 'Diabetes', 'High blood pressure', 'Other'],
+      },
     ],
     []
   );
@@ -51,7 +104,9 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => 
   const toggleMulti = (value: string) => {
     setAnswers((prev) => {
       const existing: string[] = Array.isArray(prev[q.id]) ? prev[q.id] : [];
-      const next = existing.includes(value) ? existing.filter((v) => v !== value) : [...existing, value];
+      const next = existing.includes(value)
+        ? existing.filter((v) => v !== value)
+        : [...existing, value];
       return { ...prev, [q.id]: next };
     });
   };
@@ -77,13 +132,19 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => 
         },
         { merge: true }
       );
-      Alert.alert('Saved', 'Thanks! Your answers were saved.', [{ text: 'OK', onPress: onComplete }]);
+      Alert.alert('Saved', 'Thanks! Your answers were saved.', [
+        { text: 'OK', onPress: onComplete },
+      ]);
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Failed to save onboarding');
     }
   };
 
-  const Button: React.FC<{ label: string; onPress: () => void; active?: boolean }>= ({ label, onPress, active }) => (
+  const Button: React.FC<{ label: string; onPress: () => void; active?: boolean }> = ({
+    label,
+    onPress,
+    active,
+  }) => (
     <TouchableOpacity
       onPress={onPress}
       className="active:scale-95"
@@ -98,7 +159,9 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => 
         alignSelf: 'center',
         minWidth: 220,
       }}>
-      <Text style={{ textAlign: 'center', color: active ? '#fff' : '#000', fontWeight: '600' }}>{label}</Text>
+      <Text style={{ textAlign: 'center', color: active ? '#fff' : '#000', fontWeight: '600' }}>
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 
@@ -128,7 +191,12 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => 
         return (
           <View style={{ width: '100%', ...centered }}>
             {q.options?.map((opt) => (
-              <Button key={opt} label={opt} onPress={() => toggleMulti(opt)} active={v.includes(opt)} />
+              <Button
+                key={opt}
+                label={opt}
+                onPress={() => toggleMulti(opt)}
+                active={v.includes(opt)}
+              />
             ))}
           </View>
         );
@@ -164,25 +232,64 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => 
 
   return (
     <SafeAreaView className="flex-1 bg-gradient-to-br from-pink-50 to-white">
-      <StatusBar barStyle={Platform.OS === 'ios' ? 'dark-content' : 'light-content'} backgroundColor="transparent" translucent />
-      <Navbar title={`Onboarding ${currentIndex + 1} / ${questions.length}`} onBack={onBackToHome} />
+      <StatusBar
+        barStyle={Platform.OS === 'ios' ? 'dark-content' : 'light-content'}
+        backgroundColor="transparent"
+        translucent
+      />
+      <Navbar
+        title={`Onboarding ${currentIndex + 1} / ${questions.length}`}
+        onBack={onBackToHome}
+      />
 
-      <ScrollView contentContainerStyle={{ flexGrow: 1, ...centered, padding: 20 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, ...centered, padding: 20 }}
+        showsVerticalScrollIndicator={false}>
         <View style={{ width: '100%', maxWidth: 520, ...centered, gap: 18 }}>
-          <Text style={{ textAlign: 'center', fontSize: 18, fontWeight: '600', color: 'black' }}>{q.text}</Text>
+          <Text style={{ textAlign: 'center', fontSize: 18, fontWeight: '600', color: 'black' }}>
+            {q.text}
+          </Text>
           {renderControls()}
 
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%', maxWidth: 520, marginTop: 20, paddingHorizontal: 12 }}>
+          <View
+            style={{
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              width: '100%',
+              maxWidth: 520,
+              marginTop: 20,
+              paddingHorizontal: 12,
+            }}>
             {currentIndex > 0 ? (
-              <TouchableOpacity onPress={prev} style={{ borderRadius: 20, paddingVertical: 12, paddingHorizontal: 18, backgroundColor: '#ddd', borderWidth: 1, borderColor: '#000' }}>
+              <TouchableOpacity
+                onPress={prev}
+                style={{
+                  borderRadius: 20,
+                  paddingVertical: 12,
+                  paddingHorizontal: 18,
+                  backgroundColor: '#ddd',
+                  borderWidth: 1,
+                  borderColor: '#000',
+                }}>
                 <Text style={{ fontWeight: '600' }}>Previous</Text>
               </TouchableOpacity>
-            ) : <View />}
+            ) : (
+              <View />
+            )}
 
             <TouchableOpacity
               onPress={next}
-              style={{ borderRadius: 20, paddingVertical: 12, paddingHorizontal: 18, backgroundColor: '#EB9DED', borderWidth: 1, borderColor: '#000' }}>
-              <Text style={{ color: '#fff', fontWeight: '600' }}>{currentIndex === questions.length - 1 ? 'Complete' : 'Next'}</Text>
+              style={{
+                borderRadius: 20,
+                paddingVertical: 12,
+                paddingHorizontal: 18,
+                backgroundColor: '#EB9DED',
+                borderWidth: 1,
+                borderColor: '#000',
+              }}>
+              <Text style={{ color: '#fff', fontWeight: '600' }}>
+                {currentIndex === questions.length - 1 ? 'Complete' : 'Next'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -192,6 +299,3 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => 
 };
 
 export default Onboarding;
-
-
-
