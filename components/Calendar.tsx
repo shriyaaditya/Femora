@@ -7,8 +7,7 @@ import {
   StatusBar,
   ScrollView,
   StyleSheet,
-  Dimensions,
-  Switch,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Navbar from './Navbar';
@@ -290,7 +289,7 @@ const Calendar: React.FC<CalendarProps> = ({
           style: 'secondary',
         }}
       />
-
+      
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {renderMonthView()}
 
@@ -298,6 +297,26 @@ const Calendar: React.FC<CalendarProps> = ({
         {renderScanHistory()}
       </ScrollView>
 
+      <View
+      style={{
+        position: 'absolute',
+        bottom: 400,
+        left: 200,
+        width: 300,
+        height: 300,
+        opacity: 0.2, // Reduced opacity for faded effect
+        zIndex: 0, // Behind other content
+      }}
+    >
+      <Image
+        source={require('../assets/calender.png')} // Replace with your image path
+        style={{
+          width: '100%',
+          height: '100%',
+        }}
+        resizeMode="contain"
+      />
+    </View>
       <BottomBar
         onScanPress={onNavigateToScan}
         onHomePress={onNavigateToHome}

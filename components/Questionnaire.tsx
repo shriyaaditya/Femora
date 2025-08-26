@@ -612,6 +612,28 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
 
       <Navbar title="Self Scan Questionnaire" onBack={onNavigateToHome} />
 
+      {/* Fixed Decorative Image - positioned outside dynamic content */}
+      <View
+        style={{
+          position: 'absolute',
+          bottom: 20,
+          left: -30,
+          width: 300,
+          height: 300,
+          opacity: 0.2, // Reduced opacity for faded effect
+          zIndex: -1, // Behind other content
+        }}
+      >
+        <Image
+          source={require('../assets/imageQ.png')} // Replace with your image path
+          style={{
+            width: '100%',
+            height: '100%',
+          }}
+          resizeMode="contain"
+        />
+      </View>
+
       <ScrollView
         ref={scrollViewRef}
         className="flex-1"

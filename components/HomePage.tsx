@@ -289,6 +289,7 @@ const HomePage: React.FC<HomePageProps> = ({
           style={{
             paddingHorizontal: isSmallDevice ? 16 : isMediumDevice ? 20 : 24,
             marginBottom: isSmallDevice ? 24 : 28,
+            marginTop: isSmallDevice ? 20 : 24,
           }}>
           <View style={{ alignItems: 'flex-start' }}>
             <Text
@@ -303,23 +304,15 @@ const HomePage: React.FC<HomePageProps> = ({
                 {displayName || user?.email?.split('@')[0] || 'User'}!
               </Text>
             </Text>
-            <Text
-              style={{
-                marginBottom: isSmallDevice ? 6 : 8,
-                fontSize: isSmallDevice ? 14 : 16,
-                color: '#666',
-                lineHeight: isSmallDevice ? 20 : 22,
-              }}>
-              Your past scan showed no concerns.
-            </Text>
+            
             <Text
               style={{
                 fontSize: isSmallDevice ? 14 : 16,
                 fontWeight: '500',
-                color: '#FF9DF1',
+                color: '',
                 lineHeight: isSmallDevice ? 20 : 22,
               }}>
-              Ready for today&apos;s quick check?
+              Welcome to Femora!
             </Text>
           </View>
         </View>
@@ -330,6 +323,7 @@ const HomePage: React.FC<HomePageProps> = ({
             justifyContent: 'center',
             paddingHorizontal: isSmallDevice ? 16 : isMediumDevice ? 20 : 24,
             marginBottom: isSmallDevice ? 24 : 28,
+            marginTop: isSmallDevice ? 20 : 24,
           }}>
           {/* Enhanced Action Buttons */}
           <View
