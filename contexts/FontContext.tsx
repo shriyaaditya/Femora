@@ -33,9 +33,5 @@ export const FontProvider: React.FC<FontProviderProps> = ({ children }) => {
     },
   };
 
-  return (
-    <FontContext.Provider value={fontContext}>
-      {children}
-    </FontContext.Provider>
-  );
+  return <FontContext.Provider value={fontContext}>{children}</FontContext.Provider>;
 };

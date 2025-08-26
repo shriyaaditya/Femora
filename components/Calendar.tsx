@@ -120,7 +120,7 @@ const Calendar: React.FC<CalendarProps> = ({
             <Ionicons name="chevron-back" size={24} color="#333" />
           </TouchableOpacity>
 
-          <Text className="font-denis text-xl font-bold text-center text-[#333]">
+          <Text className="text-center font-denis text-xl font-bold text-[#333]">
             {getMonthName(currentMonth)}
           </Text>
 
@@ -291,7 +291,7 @@ const Calendar: React.FC<CalendarProps> = ({
           style: 'secondary',
         }}
       />
-      
+
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {renderMonthView()}
 
@@ -300,25 +300,24 @@ const Calendar: React.FC<CalendarProps> = ({
       </ScrollView>
 
       <View
-      style={{
-        position: 'absolute',
-        bottom: 400,
-        left: 200,
-        width: 300,
-        height: 300,
-        opacity: 0.2, // Reduced opacity for faded effect
-        zIndex: 0, // Behind other content
-      }}
-    >
-      <Image
-        source={require('../assets/calender.png')} // Replace with your image path
         style={{
-          width: '100%',
-          height: '100%',
-        }}
-        resizeMode="contain"
-      />
-    </View>
+          position: 'absolute',
+          bottom: 400,
+          left: 200,
+          width: 300,
+          height: 300,
+          opacity: 0.2, // Reduced opacity for faded effect
+          zIndex: 0, // Behind other content
+        }}>
+        <Image
+          source={require('../assets/calender.png')} // Replace with your image path
+          style={{
+            width: '100%',
+            height: '100%',
+          }}
+          resizeMode="contain"
+        />
+      </View>
       <BottomBar
         onScanPress={onNavigateToScan}
         onHomePress={onNavigateToHome}

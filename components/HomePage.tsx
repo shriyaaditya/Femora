@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../contexts/AuthContext';
 import Navbar from './Navbar';
 import BottomBar from './BottomBar';
-import { db } from '../config/firebase';
-import { doc, getDoc } from 'firebase/firestore';
 
 const { width: screenWidth } = Dimensions.get('window');
 const isSmallDevice = screenWidth < 375;
@@ -80,22 +78,39 @@ const HomePage: React.FC<HomePageProps> = ({
       titleColor: '#FF8C00',
       shadowColor: '#FFB347',
     },
+    {
+      id: 5,
+      title: 'Get Enough Sleep',
+      description: 'Maintain proper sleep cycles for hormone balance',
+      image: require('../assets/sleep.png'),
+      backgroundColor: '#F5F5DC',
+      titleColor: '#556B2F',
+      shadowColor: '#C2B280',
+    },
+    {
+      id: 6,
+      title: 'Limit Hormonal Therapy',
+      description: 'Consult your doctor before long-term hormone use',
+      image: require('../assets/hormone.png'),
+      backgroundColor: '#FFF0F5',
+      titleColor: '#C71585',
+      shadowColor: '#FFB6C1',
+    },
+    {
+      id: 7,
+      title: 'Reduce Stress',
+      description: 'Practice relaxation, yoga, and meditation',
+      image: require('../assets/stress.png'),
+      backgroundColor: '#F0FFF0',
+      titleColor: '#228B22',
+      shadowColor: '#90EE90',
+    },
   ];
 
   useEffect(() => {
-    let mounted = true;
-    const fetchProfile = async () => {
-      try {
-        if (!user) return;
-        const snap = await getDoc(doc(db, 'users', user.uid));
-        const name = snap.data()?.onboarding?.name as string | undefined;
-        if (mounted) setDisplayName(name ?? null);
-      } catch {}
-    };
-    fetchProfile();
-    return () => {
-      mounted = false;
-    };
+    if (user) {
+      setDisplayName(user.name || user.email?.split('@')[0] || 'User');
+    }
   }, [user]);
 
   return (
@@ -205,9 +220,7 @@ const HomePage: React.FC<HomePageProps> = ({
                   {streakCount} Day Streak
                 </Text>
               </View>
-              <Text className="font-denis text-sm text-[#6B7280]">
-                Keep up the great work! 🔥
-              </Text>
+              <Text className="font-denis text-sm text-[#6B7280]">Keep up the great work! 🔥</Text>
             </View>
 
             {/* Right side - Progress section */}
@@ -531,7 +544,6 @@ const HomePage: React.FC<HomePageProps> = ({
                         fontWeight: '700',
                         color: '#333',
                         marginBottom: 4,
-                       
                       }}>
                       {card.title}
                     </Text>
@@ -541,7 +553,6 @@ const HomePage: React.FC<HomePageProps> = ({
                         fontWeight: '500',
                         color: '#333333',
                         lineHeight: 14,
-                      
                       }}>
                       {card.description}
                     </Text>

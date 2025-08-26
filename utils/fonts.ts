@@ -2,7 +2,7 @@ import * as Font from 'expo-font';
 
 export const loadFonts = async () => {
   await Font.loadAsync({
-    'DenisMacharov': require('../assets/fonts/DenisMacharov-Regular.ttf'),
+    DenisMacharov: require('../assets/fonts/DenisMacharov-Regular.ttf'),
   });
 };
 
@@ -19,6 +19,7 @@ export const fonts = {
 // font-denis - Base font family
 // font-denis text-sm - Small text
 // font-denis text-base - Base text size
+
 // font-denis text-lg - Large text
 // font-denis text-xl - Extra large text
 // font-denis text-2xl - 2X large text

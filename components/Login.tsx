@@ -11,8 +11,6 @@ import {
   Platform,
 } from 'react-native';
 import { useAuth } from '../contexts/AuthContext';
-import { db } from '../config/firebase';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 interface LoginProps {
   onShowProfileForm: () => void;
@@ -23,7 +21,7 @@ const Login: React.FC<LoginProps> = ({ onShowProfileForm }) => {
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp, signInWithGoogle } = useAuth();
+  const { signIn, signUp } = useAuth();
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -40,40 +38,10 @@ const Login: React.FC<LoginProps> = ({ onShowProfileForm }) => {
         ]);
       } else {
         await signIn(email, password);
+        // For sign-in, don't show onboarding - user will go directly to home if they've completed it
       }
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Authentication failed');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const ensureUserDoc = async (uid: string, email?: string | null) => {
-    const userRef = doc(db, 'users', uid);
-    const snap = await getDoc(userRef);
-    if (!snap.exists()) {
-      await setDoc(userRef, {
-        uid,
-        email: email || null,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setLoading(true);
-    try {
-      await signInWithGoogle();
-      // After Firebase sign-in, currentUser is available via auth
-      const { auth } = await import('../config/firebase');
-      const uid = auth.currentUser?.uid;
-      const email = auth.currentUser?.email;
-      if (uid) {
-        await ensureUserDoc(uid, email ?? undefined);
-      }
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Google sign-in failed');
     } finally {
       setLoading(false);
     }
@@ -100,75 +68,49 @@ const Login: React.FC<LoginProps> = ({ onShowProfileForm }) => {
           </View>
 
           {/* Form */}
-          <View className="space-y-4">
-            <View>
-              <Text className="mb-2 font-medium text-gray-700">Email</Text>
-              <TextInput
-                className="rounded-2xl border border-gray-300 bg-white px-4 py-3 text-base"
-                placeholder="Enter your email"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-
-            <View>
-              <Text className="mb-2 font-medium text-gray-700">Password</Text>
-              <TextInput
-                className="rounded-2xl border border-gray-300 bg-white px-4 py-3 text-base"
-                placeholder="Enter your password"
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-
-            <TouchableOpacity
-              className={`mt-6 rounded-2xl py-4 ${loading ? 'opacity-50' : ''}`}
-              style={{
-                backgroundColor: '#FFB0D9',
-                shadowColor: '#FFB0D9',
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 8,
-                elevation: 8,
-              }}
-              onPress={handleAuth}
-              disabled={loading}>
-              <Text className="text-center text-lg font-semibold text-white">
-                {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
-              </Text>
-            </TouchableOpacity>
-
-            {/* Google Sign-In */}
-            <TouchableOpacity
-              className={`mt-3 rounded-2xl border border-gray-300 bg-white py-4 ${loading ? 'opacity-50' : ''}`}
-              style={{
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-                elevation: 4,
-              }}
-              onPress={handleGoogleSignIn}
-              disabled={loading}>
-              <Text className="text-center text-lg font-semibold text-black">
-                Continue with Google
-              </Text>
-            </TouchableOpacity>
+          <View className="mb-6 space-y-4">
+            <TextInput
+              className="rounded-2xl border border-gray-300 bg-white px-4 py-3 text-base"
+              placeholder="Email"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <TextInput
+              className="rounded-2xl border border-gray-300 bg-white px-4 py-3 text-base"
+              placeholder="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
           </View>
 
-          {/* Toggle Sign In/Sign Up */}
-          <View className="mt-6 items-center">
-            <TouchableOpacity onPress={() => setIsSignUp(!isSignUp)}>
-              <Text className="font-medium text-[#f471b5]">
-                {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
-              </Text>
-            </TouchableOpacity>
+          {/* Auth Button */}
+          <TouchableOpacity
+            className={`mb-4 rounded-2xl py-3 ${loading ? 'bg-gray-400' : 'bg-[#FFB0D9]'}`}
+            onPress={handleAuth}
+            disabled={loading}>
+            <Text className="text-center text-base font-semibold text-white">
+              {loading ? 'Loading...' : isSignUp ? 'Create Account' : 'Sign In'}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Toggle Sign Up/Sign In */}
+          <TouchableOpacity className="items-center" onPress={() => setIsSignUp(!isSignUp)}>
+            <Text className="text-[#FFB0D9]">
+              {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
+            </Text>
+          </TouchableOpacity>
+
+          {/* Demo Note */}
+          <View className="mt-8 rounded-lg bg-blue-50 p-4">
+            <Text className="text-center text-sm text-blue-600">
+              💡 Demo Mode: Any email/password combination will work for testing
+            </Text>
           </View>
         </View>
       </KeyboardAvoidingView>

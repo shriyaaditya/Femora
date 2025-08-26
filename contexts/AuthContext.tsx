@@ -1,20 +1,12 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import {
-  User,
-  onAuthStateChanged,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  GoogleAuthProvider,
-  signInWithCredential,
-} from 'firebase/auth';
-import { auth } from '../config/firebase';
-import * as WebBrowser from 'expo-web-browser';
-import * as AuthSession from 'expo-auth-session';
-import { Platform } from 'react-native';
-import Constants from 'expo-constants';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-WebBrowser.maybeCompleteAuthSession(); // 👈 required for Expo AuthSession
+interface User {
+  id: string;
+  email: string;
+  name?: string;
+  hasCompletedOnboarding?: boolean;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -22,7 +14,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  markOnboardingComplete: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,97 +25,107 @@ export const useAuth = () => {
   return context;
 };
 
-// 🔑 Google OAuth discovery document
-const discovery = {
-  authorizationEndpoint: 'https://accounts.google.com/o/oauth2/v2/auth',
-  tokenEndpoint: 'https://oauth2.googleapis.com/token',
-  revocationEndpoint: 'https://oauth2.googleapis.com/revoke',
-};
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Redirect URI for OAuth
-  const isExpoGo = Constants.appOwnership === 'expo';
-  const redirectUri = AuthSession.makeRedirectUri({
-    scheme: 'myexpoapp', // must match app.json scheme
-  });
-
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
-      setUser(firebaseUser);
-      setLoading(false);
-    });
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    WebBrowser.warmUpAsync().catch(() => {});
-    return () => {
-      WebBrowser.coolDownAsync().catch(() => {});
+    // Check for existing user in local storage
+    const checkUser = async () => {
+      try {
+        const userData = await AsyncStorage.getItem('user');
+        if (userData) {
+          setUser(JSON.parse(userData));
+        }
+      } catch (error) {
+        console.error('Error reading user data:', error);
+      } finally {
+        setLoading(false);
+      }
     };
+
+    checkUser();
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    await signInWithEmailAndPassword(auth, email, password);
-  };
-
-  const signUp = async (email: string, password: string) => {
-    await createUserWithEmailAndPassword(auth, email, password);
-  };
-
-  const logout = async () => {
-    await signOut(auth);
-  };
-
-  const signInWithGoogle = async () => {
     try {
-      const expoClientId = require('../app.json').expo?.extra?.expoClientId as string | undefined;
-      const iosClientId = require('../app.json').expo?.extra?.iosClientId as string | undefined;
-      const androidClientId = require('../app.json').expo?.extra?.androidClientId as
-        | string
-        | undefined;
-
-      const clientId = Platform.select({
-        ios: iosClientId,
-        android: androidClientId,
-        default: expoClientId,
-      });
-      if (!clientId) {
-        throw new Error('Google OAuth client ID is not configured in app.json');
+      // Simple validation - in a real app, you'd verify against a backend
+      if (!email || !password) {
+        throw new Error('Email and password are required');
       }
 
-      // Create auth request (use OIDC implicit: id_token)
-      const request = new AuthSession.AuthRequest({
-        clientId,
-        scopes: ['openid', 'profile', 'email'],
-        redirectUri,
-        responseType: AuthSession.ResponseType.IdToken,
-        extraParams: {
-          nonce: Math.random().toString(36).slice(2),
-          prompt: 'consent',
-        },
-      });
+      // Check if user already exists
+      const existingUserData = await AsyncStorage.getItem('user');
+      if (existingUserData) {
+        const existingUser = JSON.parse(existingUserData);
+        // For existing users signing in, always mark onboarding as complete
+        existingUser.hasCompletedOnboarding = true;
+        await AsyncStorage.setItem('user', JSON.stringify(existingUser));
+        setUser(existingUser);
+        return;
+      }
 
-      await request.promptAsync(discovery).then(async (result) => {
-        if (result.type === 'success' && result.authentication?.idToken) {
-          const credential = GoogleAuthProvider.credential(result.authentication.idToken);
-          await signInWithCredential(auth, credential);
-        } else {
-          throw new Error('Google sign-in cancelled or failed');
-        }
-      });
-    } catch (err) {
-      console.error('Google sign-in error:', err);
-      throw err as Error;
+      // Create a mock user (in a real app, this would come from your backend)
+      const mockUser: User = {
+        id: Date.now().toString(),
+        email,
+        name: email.split('@')[0], // Use email prefix as name
+        hasCompletedOnboarding: true, // Existing users signing in should never see onboarding
+      };
+
+      // Store user data locally
+      await AsyncStorage.setItem('user', JSON.stringify(mockUser));
+      setUser(mockUser);
+    } catch (error) {
+      console.error('Sign in error:', error);
+      throw error;
     }
   };
 
-  const value = useMemo(
-    () => ({ user, loading, signIn, signUp, logout, signInWithGoogle }),
-    [user, loading]
-  );
+  const signUp = async (email: string, password: string) => {
+    try {
+      // Simple validation
+      if (!email || !password) {
+        throw new Error('Email and password are required');
+      }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+      // Create a new user
+      const newUser: User = {
+        id: Date.now().toString(),
+        email,
+        name: email.split('@')[0],
+        hasCompletedOnboarding: false, // New users haven't completed onboarding
+      };
+
+      // Store user data locally
+      await AsyncStorage.setItem('user', JSON.stringify(newUser));
+      setUser(newUser);
+    } catch (error) {
+      console.error('Sign up error:', error);
+      throw error;
+    }
+  };
+
+  const markOnboardingComplete = async () => {
+    if (user) {
+      const updatedUser = { ...user, hasCompletedOnboarding: true };
+      await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await AsyncStorage.removeItem('user');
+      setUser(null);
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, loading, signIn, signUp, logout, markOnboardingComplete }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

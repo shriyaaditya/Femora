@@ -233,7 +233,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
       return (
         <View className="w-full space-y-3">
           <TouchableOpacity
-            className="rounded-full p-3 shadow-lg active:scale-95 mb-6"
+            className="mb-6 rounded-full p-3 shadow-lg active:scale-95"
             style={buttonStyle}
             onPress={() => {
               // Handle "Yes" - start breast scan
@@ -622,8 +622,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
           height: 300,
           opacity: 0.2, // Reduced opacity for faded effect
           zIndex: -1, // Behind other content
-        }}
-      >
+        }}>
         <Image
           source={require('../assets/imageQ.png')} // Replace with your image path
           style={{
@@ -694,7 +693,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
           {showPrivateScreening ? (
             <ThoughtBubble>
               <Text
-                className="font-denis text-center text-lg font-medium leading-6 text-black"
+                className="text-center font-denis text-lg font-medium leading-6 text-black"
                 style={{
                   fontSize: isSmallDevice ? 16 : 18,
                   lineHeight: isSmallDevice ? 22 : 24,
@@ -705,7 +704,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
           ) : isGuidedFirstScan ? (
             <ThoughtBubble>
               <Text
-                className="font-denis text-center text-lg font-medium leading-6 text-black"
+                className="text-center font-denis text-lg font-medium leading-6 text-black"
                 style={{
                   fontSize: isSmallDevice ? 16 : 18,
                   lineHeight: isSmallDevice ? 22 : 24,
@@ -716,7 +715,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
           ) : activeQuestions.length > 0 && currentQuestionIndex >= 0 ? (
             <ThoughtBubble>
               <Text
-                className="font-denis text-center text-lg font-medium leading-6 text-black"
+                className="text-center font-denis text-lg font-medium leading-6 text-black"
                 style={{
                   fontSize: isSmallDevice ? 16 : 18,
                   lineHeight: isSmallDevice ? 22 : 24,
@@ -848,4 +847,3 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
 };
 
 export default Questionnaire;
-

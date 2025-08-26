@@ -61,7 +61,7 @@ const Navbar: React.FC<NavbarProps> = ({
           borderBottomRightRadius: 28,
         }}
       />
-      
+
       <View
         style={{
           flexDirection: 'row',
@@ -71,7 +71,6 @@ const Navbar: React.FC<NavbarProps> = ({
           paddingTop: Platform.OS === 'ios' ? 12 : 16,
           paddingBottom: isSmallDevice ? 16 : 20,
         }}>
-        
         {/* Left Section: Back Button or Logo */}
         <View style={{ flexDirection: 'row', alignItems: 'center', flex: 0.25 }}>
           {onBack ? (
@@ -93,11 +92,7 @@ const Navbar: React.FC<NavbarProps> = ({
               }}
               onPress={onBack}
               activeOpacity={0.8}>
-              <Ionicons 
-                name="chevron-back" 
-                size={isSmallDevice ? 20 : 22} 
-                color="#2D1B3D" 
-              />
+              <Ionicons name="chevron-back" size={isSmallDevice ? 20 : 22} color="#2D1B3D" />
             </TouchableOpacity>
           ) : showLogo ? (
             <View
@@ -171,15 +166,14 @@ const Navbar: React.FC<NavbarProps> = ({
         </View>
 
         {/* Right Section: Notifications and Profile */}
-        <View 
-          style={{ 
-            flexDirection: 'row', 
-            alignItems: 'center', 
-            gap: 12, 
-            flex: 0.25, 
-            justifyContent: 'flex-end' 
+        <View
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 12,
+            flex: 0.25,
+            justifyContent: 'flex-end',
           }}>
-          
           {/* Enhanced Notification Bell */}
           {onNotificationPress && (
             <TouchableOpacity
@@ -200,11 +194,7 @@ const Navbar: React.FC<NavbarProps> = ({
               }}
               onPress={onNotificationPress}
               activeOpacity={0.8}>
-              <Ionicons 
-                name="notifications" 
-                size={isSmallDevice ? 20 : 22} 
-                color="#2D1B3D" 
-              />
+              <Ionicons name="notifications" size={isSmallDevice ? 20 : 22} color="#2D1B3D" />
               {/* Notification Badge */}
               {notificationCount > 0 && (
                 <View

@@ -13,8 +13,7 @@ import { Camera, CameraType } from 'expo-camera';
 import Navbar from './Navbar';
 import BottomBar from './BottomBar';
 import { useAuth } from '../contexts/AuthContext';
-import { storage } from '../config/firebase';
-import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface ImageProcessorResult {
   data: ArrayBuffer;
@@ -77,22 +76,32 @@ const ScanReport: React.FC<ScanReportProps> = ({
   }, []);
 
   const uploadArrayToStorage = async (
-    uid: string,
+    userId: string,
     targetScanId: string,
     dtype: string,
     shape: number[],
     arrayBuffer: ArrayBuffer
   ) => {
-    const path = `users/${uid}/scans/${targetScanId}/array.bin`;
-    const ref = storageRef(storage, path);
-    const uint8 = new Uint8Array(arrayBuffer);
-    const metadata = {
-      contentType: 'application/octet-stream',
-      customMetadata: { dtype, shape: JSON.stringify(shape) },
-    };
-    await uploadBytes(ref, uint8, metadata);
-    const url = await getDownloadURL(ref);
-    return url;
+    try {
+      // Store scan data locally instead of Firebase
+      const scanData = {
+        userId,
+        scanId: targetScanId,
+        dtype,
+        shape,
+        timestamp: new Date().toISOString(),
+        dataSize: arrayBuffer.byteLength,
+      };
+
+      // Save to local storage
+      const key = `scan_${userId}_${targetScanId}`;
+      await AsyncStorage.setItem(key, JSON.stringify(scanData));
+
+      return `local://${key}`;
+    } catch (error) {
+      console.error('Error saving scan data locally:', error);
+      throw new Error('Failed to save scan data locally');
+    }
   };
 
   const handleCapture = async () => {
@@ -114,14 +123,14 @@ const ScanReport: React.FC<ScanReportProps> = ({
             if (!user) throw new Error('User not authenticated');
             setLoading(true);
             const downloadUrl = await uploadArrayToStorage(
-              user.uid,
+              user.id,
               scanId || `${Date.now()}`,
               result.dtype,
               result.shape,
               arrayBuffer
             );
             setLoading(false);
-            Alert.alert('Upload complete', `Array uploaded to: ${downloadUrl}`);
+            Alert.alert('Upload complete', `Scan data saved locally: ${downloadUrl}`);
           };
           reader.readAsDataURL(file);
         };
@@ -150,20 +159,20 @@ const ScanReport: React.FC<ScanReportProps> = ({
         if (!result || !result.data) throw new Error('ImageProcessor returned no data');
         const arrayBuffer = result.data as ArrayBuffer;
         const downloadUrl = await uploadArrayToStorage(
-          user.uid,
+          user.id,
           scanId || `${Date.now()}`,
           result.dtype,
           result.shape,
           arrayBuffer
         );
         setLoading(false);
-        Alert.alert('Upload complete', `Array uploaded to: ${downloadUrl}`);
+        Alert.alert('Upload complete', `Scan data saved locally: ${downloadUrl}`);
       }
     } catch (err: any) {
       console.error('Capture/upload error:', err);
       setLoading(false);
       setIsGridActive(true); // Ensure grid is visible again on error
-      Alert.alert('Error', err.message || 'Failed to capture and upload image array');
+      Alert.alert('Error', err.message || 'Failed to capture and save scan data');
     }
   };
 

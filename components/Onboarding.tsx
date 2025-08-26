@@ -12,8 +12,7 @@ import {
 } from 'react-native';
 import Navbar from './Navbar';
 import { useAuth } from '../contexts/AuthContext';
-import { db } from '../config/firebase';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface OnboardingProps {
   onComplete: () => void;
@@ -33,7 +32,7 @@ interface QuestionDef {
 const centered = { alignItems: 'center', justifyContent: 'center' } as const;
 
 const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => {
-  const { user } = useAuth();
+  const { user, markOnboardingComplete } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
 
@@ -123,15 +122,19 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => 
         Alert.alert('Error', 'You must be signed in to save.');
         return;
       }
-      const userRef = doc(db, 'users', user.uid);
-      await setDoc(
-        userRef,
-        {
-          onboarding: { ...answers },
-          onboardingAt: serverTimestamp(),
-        },
-        { merge: true }
-      );
+
+      // Save onboarding data to local storage
+      const onboardingData = {
+        userId: user.id,
+        onboarding: { ...answers },
+        onboardingAt: new Date().toISOString(),
+      };
+
+      await AsyncStorage.setItem(`onboarding_${user.id}`, JSON.stringify(onboardingData));
+
+      // Mark onboarding as complete in the auth context
+      await markOnboardingComplete();
+
       Alert.alert('Saved', 'Thanks! Your answers were saved.', [
         { text: 'OK', onPress: onComplete },
       ]);

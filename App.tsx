@@ -44,14 +44,14 @@ function AppContent() {
   const [scanId, setScanId] = useState<string>('');
   const [showLoading, setShowLoading] = useState(true);
   const [fontsLoaded, setFontsLoaded] = useState(false);
-  const { user, loading } = useAuth();
+  const { user, loading, markOnboardingComplete } = useAuth();
 
   // Load custom fonts - ALWAYS call this hook
   useEffect(() => {
     const loadFonts = async () => {
       try {
         await Font.loadAsync({
-          'DenisMacharov': require('./assets/fonts/DenisMacharov-Regular.ttf'),
+          DenisMacharov: require('./assets/fonts/DenisMacharov-Regular.ttf'),
         });
         setFontsLoaded(true);
       } catch (error) {
@@ -83,18 +83,19 @@ function AppContent() {
     }
   }, [loading, fontsLoaded]);
 
-  // Show loading until fonts are loaded
-  if (!fontsLoaded) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FFE6F2', justifyContent: 'center', alignItems: 'center' }}>
-        <Text style={{ fontFamily: 'System', fontSize: 18, color: '#FF66CC' }}>
-          Loading Fonts...
-        </Text>
-      </SafeAreaView>
-    );
-  }
+  // Check if user needs onboarding after authentication
+  useEffect(() => {
+    if (user && !loading && !showLoading) {
+      // If user hasn't completed onboarding, show onboarding screen
+      if (!user.hasCompletedOnboarding) {
+        setCurrentScreen('onboarding');
+      } else {
+        // User has completed onboarding, show home screen
+        setCurrentScreen('home');
+      }
+    }
+  }, [user, loading, showLoading]);
 
-  // Show loading screen
   if (showLoading) {
     return <LoadingPage message="Loading..." />;
   }
@@ -152,7 +153,7 @@ function AppContent() {
         />
       )}
       {currentScreen === 'onboarding' && (
-        <Onboarding onComplete={handleNavigateToHome} onBackToHome={handleNavigateToHome} />
+        <Onboarding onComplete={handleOnboardingComplete} onBackToHome={handleNavigateToHome} />
       )}
       {currentScreen === 'breastScan' && (
         <BreastScan
@@ -221,6 +222,12 @@ function AppContent() {
 
   function handleShowOnboarding() {
     setCurrentScreen('onboarding');
+  }
+
+  function handleOnboardingComplete() {
+    // Mark onboarding as complete and navigate to home
+    markOnboardingComplete();
+    setCurrentScreen('home');
   }
 
   function onNavigateToUserProfile() {

@@ -1,13 +1,13 @@
 import React, { useEffect, useRef } from 'react';
-import { 
-  View, 
+import {
+  View,
   Text,
-  SafeAreaView, 
-  StatusBar, 
-  StyleSheet, 
+  SafeAreaView,
+  StatusBar,
+  StyleSheet,
   Image,
   Animated,
-  Dimensions
+  Dimensions,
 } from 'react-native';
 
 interface LoadingPageProps {
@@ -22,7 +22,7 @@ const LoadingPage: React.FC<LoadingPageProps> = ({ message = 'Loading...' }) => 
   const dotAnimations = useRef([
     new Animated.Value(0),
     new Animated.Value(0),
-    new Animated.Value(0)
+    new Animated.Value(0),
   ]).current;
 
   useEffect(() => {
@@ -92,13 +92,8 @@ const LoadingPage: React.FC<LoadingPageProps> = ({ message = 'Loading...' }) => 
               opacity: logoOpacity,
               transform: [{ scale: logoScale }],
             },
-          ]}
-        >
-          <Image
-            source={require('../assets/logo.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+          ]}>
+          <Image source={require('../assets/logo.png')} style={styles.logo} resizeMode="contain" />
         </Animated.View>
 
         {/* Brand name with same animation as loading text */}
@@ -109,8 +104,7 @@ const LoadingPage: React.FC<LoadingPageProps> = ({ message = 'Loading...' }) => 
               opacity: textOpacity,
               transform: [{ translateY: textTranslateY }],
             },
-          ]}
-        >
+          ]}>
           <Text style={styles.brandText}>Femora</Text>
         </Animated.View>
 
@@ -148,8 +142,7 @@ const LoadingPage: React.FC<LoadingPageProps> = ({ message = 'Loading...' }) => 
               opacity: textOpacity,
               transform: [{ translateY: textTranslateY }],
             },
-          ]}
-        >
+          ]}>
           {message}
         </Animated.Text>
       </View>
