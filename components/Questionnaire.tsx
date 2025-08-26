@@ -694,12 +694,10 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
           {showPrivateScreening ? (
             <ThoughtBubble>
               <Text
+                className="font-denis text-center text-lg font-medium leading-6 text-black"
                 style={{
-                  textAlign: 'center',
                   fontSize: isSmallDevice ? 16 : 18,
-                  fontWeight: '500',
                   lineHeight: isSmallDevice ? 22 : 24,
-                  color: 'black',
                 }}>
                 {privateScreeningQuestion}
               </Text>
@@ -707,12 +705,10 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
           ) : isGuidedFirstScan ? (
             <ThoughtBubble>
               <Text
+                className="font-denis text-center text-lg font-medium leading-6 text-black"
                 style={{
-                  textAlign: 'center',
                   fontSize: isSmallDevice ? 16 : 18,
-                  fontWeight: '500',
                   lineHeight: isSmallDevice ? 22 : 24,
-                  color: 'black',
                 }}>
                 {guidedFirstScanSteps[guidedIndex].question}
               </Text>
@@ -720,12 +716,10 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
           ) : activeQuestions.length > 0 && currentQuestionIndex >= 0 ? (
             <ThoughtBubble>
               <Text
+                className="font-denis text-center text-lg font-medium leading-6 text-black"
                 style={{
-                  textAlign: 'center',
                   fontSize: isSmallDevice ? 16 : 18,
-                  fontWeight: '500',
                   lineHeight: isSmallDevice ? 22 : 24,
-                  color: 'black',
                 }}>
                 {activeQuestions[currentQuestionIndex]}
               </Text>
@@ -854,3 +848,4 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
 };
 
 export default Questionnaire;
+

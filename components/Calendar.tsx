@@ -120,7 +120,9 @@ const Calendar: React.FC<CalendarProps> = ({
             <Ionicons name="chevron-back" size={24} color="#333" />
           </TouchableOpacity>
 
-          <Text style={styles.monthTitle}>{getMonthName(currentMonth)}</Text>
+          <Text className="font-denis text-xl font-bold text-center text-[#333]">
+            {getMonthName(currentMonth)}
+          </Text>
 
           <TouchableOpacity
             style={styles.monthButton}

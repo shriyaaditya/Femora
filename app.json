@@ -15,7 +15,7 @@
 
     "userInterfaceStyle": "light",
 
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": ["**/*", "assets/fonts/*"],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.example.myexpoapp",

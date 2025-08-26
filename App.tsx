@@ -1,7 +1,8 @@
 import './global.css';
 import React, { useEffect, useState } from 'react';
-import { Platform } from 'react-native';
+import { Platform, SafeAreaView, Text } from 'react-native';
 import * as NavigationBar from 'expo-navigation-bar';
+import * as Font from 'expo-font';
 import HomePage from './components/HomePage';
 import AskMora from './components/AskMora';
 import Questionnaire from './components/Questionnaire';
@@ -15,6 +16,17 @@ import Calendar from './components/Calendar';
 import Login from './components/Login';
 import LoadingPage from './components/LoadingPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { FontProvider } from './contexts/FontContext';
+
+export default function App() {
+  return (
+    <FontProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </FontProvider>
+  );
+}
 
 function AppContent() {
   const [currentScreen, setCurrentScreen] = useState<
@@ -31,8 +43,27 @@ function AppContent() {
   >('home');
   const [scanId, setScanId] = useState<string>('');
   const [showLoading, setShowLoading] = useState(true);
+  const [fontsLoaded, setFontsLoaded] = useState(false);
   const { user, loading } = useAuth();
 
+  // Load custom fonts - ALWAYS call this hook
+  useEffect(() => {
+    const loadFonts = async () => {
+      try {
+        await Font.loadAsync({
+          'DenisMacharov': require('./assets/fonts/DenisMacharov-Regular.ttf'),
+        });
+        setFontsLoaded(true);
+      } catch (error) {
+        console.error('Error loading fonts:', error);
+        setFontsLoaded(true); // Continue without custom fonts
+      }
+    };
+
+    loadFonts();
+  }, []);
+
+  // Navigation bar setup - ALWAYS call this hook
   useEffect(() => {
     if (Platform.OS === 'android') {
       NavigationBar.setBackgroundColorAsync('#f471b5').catch(() => {});
@@ -40,9 +71,9 @@ function AppContent() {
     }
   }, []);
 
-  // Add delay to loading screen to make it visible longer
+  // Loading screen delay - ALWAYS call this hook
   useEffect(() => {
-    if (!loading) {
+    if (!loading && fontsLoaded) {
       // Add extra delay after authentication is complete
       const timer = setTimeout(() => {
         setShowLoading(false);
@@ -50,61 +81,25 @@ function AppContent() {
 
       return () => clearTimeout(timer);
     }
-  }, [loading]);
+  }, [loading, fontsLoaded]);
 
-  const handleNavigateToAskMora = () => {
-    setCurrentScreen('askMora');
-  };
+  // Show loading until fonts are loaded
+  if (!fontsLoaded) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#FFE6F2', justifyContent: 'center', alignItems: 'center' }}>
+        <Text style={{ fontFamily: 'System', fontSize: 18, color: '#FF66CC' }}>
+          Loading Fonts...
+        </Text>
+      </SafeAreaView>
+    );
+  }
 
-  const handleNavigateToHome = () => {
-    setCurrentScreen('home');
-  };
-
-  const handleNavigateToHistory = () => {
-    setCurrentScreen('viewHistory');
-  };
-
-  const handleStartScan = () => {
-    setCurrentScreen('questionnaire');
-  };
-
-  const handleStartBreastScan = () => {
-    setCurrentScreen('breastScan');
-  };
-
-  const handleLogout = () => {
-    // Reset to home screen - the AuthContext will handle showing login
-    setCurrentScreen('home');
-  };
-
-  const handleShowOnboarding = () => {
-    setCurrentScreen('onboarding');
-  };
-
-  const handleNavigateToUserProfile = () => {
-    setCurrentScreen('userProfile');
-  };
-
-  const handleNavigateToCalendar = () => {
-    setCurrentScreen('calendar');
-  };
-
-  const handleNavigateToReport = (id: string) => {
-    setScanId(id);
-    setCurrentScreen('scanReport');
-  };
-
-  const handleNavigateToScanResults = (id: string) => {
-    setScanId(id);
-    setCurrentScreen('scanResults');
-  };
-
-  // Show loading screen while checking authentication or during the delay
-  if (loading || showLoading) {
+  // Show loading screen
+  if (showLoading) {
     return <LoadingPage message="Loading..." />;
   }
 
-  // Show login screen if user is not authenticated
+  // Show login if no user
   if (!user) {
     return <Login onShowProfileForm={handleShowOnboarding} />;
   }
@@ -118,14 +113,14 @@ function AppContent() {
           onNavigateToHistory={handleNavigateToHistory}
           onStartScan={handleStartScan}
           onLogout={handleLogout}
-          onNavigateToUserProfile={handleNavigateToUserProfile}
+          onNavigateToUserProfile={onNavigateToUserProfile}
           onNavigateToCalendar={handleNavigateToCalendar}
         />
       )}
       {currentScreen === 'askMora' && (
         <AskMora
           onNavigateToHome={handleNavigateToHome}
-          onNavigateToUserProfile={handleNavigateToUserProfile}
+          onNavigateToUserProfile={onNavigateToUserProfile}
           onNavigateToCalendar={handleNavigateToCalendar}
           onNavigateToScan={handleStartScan}
         />
@@ -133,7 +128,7 @@ function AppContent() {
       {currentScreen === 'questionnaire' && (
         <Questionnaire
           onNavigateToHome={handleNavigateToHome}
-          onNavigateToUserProfile={handleNavigateToUserProfile}
+          onNavigateToUserProfile={onNavigateToUserProfile}
           onStartBreastScan={handleStartBreastScan}
           onNavigateToCalendar={handleNavigateToCalendar}
           onNavigateToAskMora={handleNavigateToAskMora}
@@ -142,7 +137,7 @@ function AppContent() {
       {currentScreen === 'viewHistory' && (
         <ViewHistory
           onNavigateToHome={handleNavigateToHome}
-          onNavigateToUserProfile={handleNavigateToUserProfile}
+          onNavigateToUserProfile={onNavigateToUserProfile}
           onNavigateToCalendar={handleNavigateToCalendar}
           onNavigateToAskMora={handleNavigateToAskMora}
           onNavigateToScan={handleStartScan}
@@ -179,7 +174,7 @@ function AppContent() {
         <ScanResults
           scanId={scanId}
           onNavigateToHome={handleNavigateToHome}
-          onNavigateToUserProfile={handleNavigateToUserProfile}
+          onNavigateToUserProfile={onNavigateToUserProfile}
           onNavigateToCalendar={handleNavigateToCalendar}
           onNavigateToAskMora={handleNavigateToAskMora}
         />
@@ -188,7 +183,7 @@ function AppContent() {
       {currentScreen === 'calendar' && (
         <Calendar
           onNavigateToHome={handleNavigateToHome}
-          onNavigateToUserProfile={handleNavigateToUserProfile}
+          onNavigateToUserProfile={onNavigateToUserProfile}
           onNavigateToReport={handleNavigateToReport}
           onNavigateToAskMora={handleNavigateToAskMora}
           onNavigateToScan={handleStartScan}
@@ -197,12 +192,52 @@ function AppContent() {
       )}
     </>
   );
-}
 
-export default function App() {
-  return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
-  );
+  // Navigation handler functions
+  function handleNavigateToAskMora() {
+    setCurrentScreen('askMora');
+  }
+
+  function handleNavigateToHome() {
+    setCurrentScreen('home');
+  }
+
+  function handleNavigateToHistory() {
+    setCurrentScreen('viewHistory');
+  }
+
+  function handleStartScan() {
+    setCurrentScreen('questionnaire');
+  }
+
+  function handleStartBreastScan() {
+    setCurrentScreen('breastScan');
+  }
+
+  function handleLogout() {
+    // Reset to home screen - the AuthContext will handle showing login
+    setCurrentScreen('home');
+  }
+
+  function handleShowOnboarding() {
+    setCurrentScreen('onboarding');
+  }
+
+  function onNavigateToUserProfile() {
+    setCurrentScreen('userProfile');
+  }
+
+  function handleNavigateToCalendar() {
+    setCurrentScreen('calendar');
+  }
+
+  function handleNavigateToReport(id: string) {
+    setScanId(id);
+    setCurrentScreen('scanReport');
+  }
+
+  function handleNavigateToScanResults(id: string) {
+    setScanId(id);
+    setCurrentScreen('scanResults');
+  }
 }

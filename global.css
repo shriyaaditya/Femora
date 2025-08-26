@@ -1,3 +1,71 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  /* Apply Denis Macharov only to text elements, not to icon elements */
+  .text-base, .text-sm, .text-lg, .text-xl, .text-2xl, .text-3xl {
+    font-family: 'DenisMacharov', serif;
+  }
+  
+  /* Preserve icon fonts - don't override these */
+  .icon, .emoji, [data-icon], [role="img"] {
+    font-family: inherit !important;
+  }
+  
+  /* Apply Denis Macharov to specific text classes */
+  .font-denis {
+    font-family: 'DenisMacharov', serif;
+  }
+  
+  /* Override specific font families only when explicitly requested */
+  .font-sans {
+    font-family: 'DenisMacharov', serif;
+  }
+  
+  .font-serif {
+    font-family: 'DenisMacharov', serif;
+  }
+}
+
+@layer components {
+  /* Create utility classes for Denis Macharov text */
+  .text-denis {
+    font-family: 'DenisMacharov', serif;
+  }
+  
+  .text-denis-sm {
+    font-family: 'DenisMacharov', serif;
+    font-size: 0.875rem;
+  }
+  
+  .text-denis-base {
+    font-family: 'DenisMacharov', serif;
+    font-size: 1rem;
+  }
+  
+  .text-denis-lg {
+    font-family: 'DenisMacharov', serif;
+    font-size: 1.125rem;
+  }
+  
+  .text-denis-xl {
+    font-family: 'DenisMacharov', serif;
+    font-size: 1.25rem;
+  }
+  
+  .text-denis-2xl {
+    font-family: 'DenisMacharov', serif;
+    font-size: 1.5rem;
+  }
+  
+  .text-denis-3xl {
+    font-family: 'DenisMacharov', serif;
+    font-size: 1.875rem;
+  }
+  
+  /* Force Denis Macharov only when explicitly requested */
+  .force-denis {
+    font-family: 'DenisMacharov', serif;
+  }
+}

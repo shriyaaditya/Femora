@@ -1,11 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { 
   View, 
+  Text,
   SafeAreaView, 
   StatusBar, 
   StyleSheet, 
-  Image, 
-  Text,
+  Image,
   Animated,
   Dimensions
 } from 'react-native';
@@ -24,7 +24,6 @@ const LoadingPage: React.FC<LoadingPageProps> = ({ message = 'Loading...' }) => 
     new Animated.Value(0),
     new Animated.Value(0)
   ]).current;
-  const typingAnimation = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     // Logo entrance animation
@@ -41,7 +40,7 @@ const LoadingPage: React.FC<LoadingPageProps> = ({ message = 'Loading...' }) => 
           useNativeDriver: true,
         }),
       ]),
-      // Text entrance animation
+      // Text entrance animation (both "Femora" and loading message)
       Animated.parallel([
         Animated.timing(textOpacity, {
           toValue: 1,
@@ -52,12 +51,6 @@ const LoadingPage: React.FC<LoadingPageProps> = ({ message = 'Loading...' }) => 
           toValue: 0,
           duration: 500,
           useNativeDriver: true,
-        }),
-        // Typing effect for "Femora"
-        Animated.timing(typingAnimation, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: false,
         }),
       ]),
     ]).start();
@@ -86,31 +79,6 @@ const LoadingPage: React.FC<LoadingPageProps> = ({ message = 'Loading...' }) => 
     });
   }, []);
 
-  const renderTypingText = () => {
-    const text = "Femora";
-    const animatedText = text.split('').map((char, index) => {
-      const opacity = typingAnimation.interpolate({
-        inputRange: [index / text.length, (index + 1) / text.length],
-        outputRange: [0, 1],
-        extrapolate: 'clamp',
-      });
-
-      return (
-        <Animated.Text
-          key={index}
-          style={[
-            styles.brandText,
-            { opacity }
-          ]}
-        >
-          {char}
-        </Animated.Text>
-      );
-    });
-
-    return <View style={styles.typingContainer}>{animatedText}</View>;
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#e2caf9" />
@@ -133,7 +101,7 @@ const LoadingPage: React.FC<LoadingPageProps> = ({ message = 'Loading...' }) => 
           />
         </Animated.View>
 
-        {/* Brand name with typing effect */}
+        {/* Brand name with same animation as loading text */}
         <Animated.View
           style={[
             styles.brandContainer,
@@ -143,7 +111,7 @@ const LoadingPage: React.FC<LoadingPageProps> = ({ message = 'Loading...' }) => 
             },
           ]}
         >
-          {renderTypingText()}
+          <Text style={styles.brandText}>Femora</Text>
         </Animated.View>
 
         {/* Bouncing dots */}
@@ -172,7 +140,7 @@ const LoadingPage: React.FC<LoadingPageProps> = ({ message = 'Loading...' }) => 
           ))}
         </View>
 
-        {/* Loading message */}
+        {/* Loading message with same animation as brand name */}
         <Animated.Text
           style={[
             styles.loadingMessage,
@@ -218,16 +186,15 @@ const styles = StyleSheet.create({
   brandContainer: {
     marginBottom: 40,
   },
-  typingContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-  },
   brandText: {
     fontSize: 42,
     fontWeight: '700',
-    color: '#FF9DF1',
+    color: '#FFFFFF',
     letterSpacing: 2,
+    textShadowColor: 'rgba(255, 157, 241, 0.3)',
     textShadowOffset: { width: 0, height: 2 },
+    textShadowRadius: 4,
+    fontFamily: 'Italiana',
   },
   dotsContainer: {
     flexDirection: 'row',
@@ -240,13 +207,13 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#151515',
+    backgroundColor: '#FFFFFF',
     elevation: 4,
   },
   loadingMessage: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#151515',
+    color: '#333',
     textAlign: 'center',
     opacity: 0.8,
   },

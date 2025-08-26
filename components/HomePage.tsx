@@ -40,6 +40,7 @@ const HomePage: React.FC<HomePageProps> = ({
 }) => {
   const { user, logout } = useAuth();
   const [displayName, setDisplayName] = useState<string | null>(null);
+  const [streakCount, setStreakCount] = useState<number>(7); // Default streak count
 
   // Breast Health Care Cards Data
   const breastHealthCards = [
@@ -197,36 +198,15 @@ const HomePage: React.FC<HomePageProps> = ({
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
                 <Image
                   source={require('../assets/fire.png')}
-                  style={{ width: 30, height: 30 }}
+                  style={{ width: 24, height: 24, marginRight: 8 }}
                   resizeMode="contain"
                 />
-                <Text
-                  style={{
-                    fontSize: isSmallDevice ? 22 : 26,
-                    fontWeight: '800',
-                    color: '#333333',
-                  }}>
-                  7
-                </Text>
-                <Text
-                  style={{
-                    fontSize: isSmallDevice ? 16 : 18,
-                    fontWeight: '700',
-                    color: '#333',
-                    marginLeft: 6,
-                  }}>
-                  day streak!
+                <Text className="font-denis text-lg font-bold text-[#8B5CF6]">
+                  {streakCount} Day Streak
                 </Text>
               </View>
-
-              <Text
-                style={{
-                  fontSize: isSmallDevice ? 12 : 14,
-                  fontWeight: '500',
-                  color: '#666',
-                  opacity: 0.8,
-                }}>
-                Keep up the great work! 💜
+              <Text className="font-denis text-sm text-[#6B7280]">
+                Keep up the great work! 🔥
               </Text>
             </View>
 
@@ -287,34 +267,25 @@ const HomePage: React.FC<HomePageProps> = ({
         {/* Greeting Section - Left aligned below streak counter */}
         <View
           style={{
-            paddingHorizontal: isSmallDevice ? 16 : isMediumDevice ? 20 : 24,
+            marginHorizontal: isSmallDevice ? 16 : isMediumDevice ? 20 : 24,
             marginBottom: isSmallDevice ? 24 : 28,
-            marginTop: isSmallDevice ? 20 : 24,
           }}>
-          <View style={{ alignItems: 'flex-start' }}>
-            <Text
-              style={{
-                marginBottom: isSmallDevice ? 8 : 10,
-                fontSize: isSmallDevice ? 18 : isMediumDevice ? 20 : 22,
-                fontWeight: '600',
-                color: 'black',
-              }}>
-              Hi{' '}
-              <Text style={{ color: '#FF9DF1' }}>
-                {displayName || user?.email?.split('@')[0] || 'User'}!
-              </Text>
-            </Text>
-            
-            <Text
-              style={{
-                fontSize: isSmallDevice ? 14 : 16,
-                fontWeight: '500',
-                color: '',
-                lineHeight: isSmallDevice ? 20 : 22,
-              }}>
-              Welcome to Femora!
-            </Text>
-          </View>
+          <Text
+            className="font-denis text-2xl font-bold text-[#333]"
+            style={{
+              fontSize: isSmallDevice ? 20 : 24,
+              marginBottom: 8,
+            }}>
+            Hello, {displayName || user?.email?.split('@')[0] || 'User'}! 👋
+          </Text>
+          <Text
+            className="font-denis text-base text-[#666]"
+            style={{
+              fontSize: isSmallDevice ? 14 : 16,
+              lineHeight: isSmallDevice ? 20 : 22,
+            }}>
+            Ready for your breast health check today?
+          </Text>
         </View>
 
         {/* Main Content Area */}
@@ -356,7 +327,7 @@ const HomePage: React.FC<HomePageProps> = ({
                   style={{
                     fontSize: isSmallDevice ? 16 : 18,
                     fontWeight: '700',
-                    color: '#33333',
+                    color: '#333',
                     marginBottom: 2,
                   }}>
                   Start Self Scan
@@ -365,7 +336,7 @@ const HomePage: React.FC<HomePageProps> = ({
                   style={{
                     fontSize: isSmallDevice ? 12 : 13,
                     fontWeight: '400',
-                    color: '#33333',
+                    color: '#333',
                     opacity: 0.9,
                   }}>
                   Quick 2-minute health check
