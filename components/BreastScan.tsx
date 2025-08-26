@@ -32,7 +32,10 @@ const BreastScan: React.FC<BreastScanProps> = ({
   const [isGridActive, setIsGridActive] = useState(true);
   const [scanCompleted, setScanCompleted] = useState(false);
   const [facing, setFacing] = useState<'front' | 'back'>('back');
-
+  const [processingStatus, setProcessingStatus] = useState<{
+    status: 'processing' | 'completed' | 'failed';
+    message?: string;
+  } | null>(null);
 
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
 
@@ -107,10 +110,10 @@ const BreastScan: React.FC<BreastScanProps> = ({
       setScanCompleted(true);
       setIsScanning(false);
 
-      Alert.alert('Scan Complete', 'Breast scan completed successfully!', [
-        { text: 'View Report', onPress: () => onNavigateToReport(scanId) },
-        { text: 'Continue', style: 'cancel' },
-      ]);
+      // Navigate to report after a short delay
+      setTimeout(() => {
+        onNavigateToReport(scanId);
+      }, 2000);
     } catch (error) {
       console.error('Error completing scan:', error);
       Alert.alert('Error', 'Failed to complete scan');
@@ -130,98 +133,168 @@ const BreastScan: React.FC<BreastScanProps> = ({
     setIsGridActive(!isGridActive);
   };
 
-  // Show loading while checking permission
-  if (cameraPermission === null) {
+  if (!cameraPermission?.granted) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
-        <StatusBar barStyle="dark-content" backgroundColor="#FFB0D9" />
-        <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#FFB0D9" />
-          <Text className="mt-4 text-gray-600">Requesting camera permission...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  // Show permission request if not granted
-  if (!cameraPermission.granted) {
-    return (
-      <SafeAreaView className="flex-1 bg-white">
-        <StatusBar barStyle="dark-content" backgroundColor="#FFB0D9" />
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
         <Navbar title="Breast Scan" onBack={onNavigateToHome} />
-        <View className="flex-1 items-center justify-center px-6">
-          <Text className="mb-4 text-center text-lg text-gray-700">
-            Camera permission is required to perform breast scans
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <Text style={{ fontSize: 18, textAlign: 'center', marginBottom: 20 }}>
+            Camera permission is required to perform breast scans.
           </Text>
           <TouchableOpacity
-            className="rounded-2xl bg-[#FFB0D9] px-6 py-3"
+            style={{
+              backgroundColor: '#8B5CF6',
+              paddingHorizontal: 20,
+              paddingVertical: 12,
+              borderRadius: 8,
+            }}
             onPress={requestCameraPermission}>
-            <Text className="text-center font-semibold text-white">Grant Permission</Text>
+            <Text style={{ color: 'white', fontSize: 16 }}>Grant Permission</Text>
           </TouchableOpacity>
         </View>
-        <BottomBar
-          onScanPress={() => {}}
-          onHomePress={onNavigateToHome}
-          onCalendarPress={onNavigateToCalendar}
-          onAIChatPress={() => {}}
-          onDoctorPress={() => {}}
-          activeTab="scan"
-        />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-black">
-      <StatusBar barStyle="light-content" backgroundColor="#000" />
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+
       <Navbar title="Breast Scan" onBack={onNavigateToHome} />
 
-      <View className="flex-1">
-        <CameraView ref={cameraRef} facing={facing} className="flex-1" ratio="4:3">
-          {/* Grid Overlay */}
-          {isGridActive && <AnimatedGridOverlay />}
+      {/* Hidden Camera */}
+      <View style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden' }}>
+        <CameraView ref={cameraRef} facing="front" style={{ width: 1, height: 1 }} />
+      </View>
 
-          {/* Scan Controls */}
-          <View className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 p-6">
-            <View className="mb-4 flex-row justify-center space-x-4">
-              <TouchableOpacity className="rounded-full bg-white p-3" onPress={toggleGrid}>
-                <Text className="text-black">Grid</Text>
+      {/* Main Content Container */}
+      <View style={{ flex: 1, paddingHorizontal: 24 }}>
+        {/* Animated Grid Overlay - fills the space below navbar */}
+        <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}>
+          <AnimatedGridOverlay isActive={isGridActive} />
+        </View>
+
+        {/* Content Container - centered in remaining space */}
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          {/* Scanning Instructions */}
+          <View style={{ marginBottom: 32, alignItems: 'center' }}>
+            <Text style={{ 
+              marginBottom: 16, 
+              textAlign: 'center', 
+              fontSize: 20, 
+              fontWeight: '600', 
+              color: '#2D1B3D' 
+            }}>
+              {scanCompleted
+                ? 'Scan Complete!'
+                : isScanning
+                  ? 'Scanning in Progress...'
+                  : 'Ready to Start Scan'}
+            </Text>
+
+            <Text style={{ 
+              marginBottom: 32, 
+              textAlign: 'center', 
+              fontSize: 16, 
+              lineHeight: 24, 
+              color: '#6B7280' 
+            }}>
+              {scanCompleted
+                ? 'Generating your personalized health report...'
+                : isScanning
+                  ? 'Please remain still. The scan will complete automatically in a few seconds.'
+                  : 'Position yourself comfortably. The camera will capture images automatically when you start.'}
+            </Text>
+          </View>
+
+          {/* Processing Status */}
+          {processingStatus && (
+            <View style={{ 
+              marginBottom: 24, 
+              width: '100%', 
+              maxWidth: 300, 
+              borderRadius: 8, 
+              borderWidth: 1, 
+              borderColor: '#BFDBFE', 
+              backgroundColor: '#EFF6FF', 
+              padding: 16 
+            }}>
+              <Text style={{ textAlign: 'center', fontSize: 14, color: '#1E40AF' }}>
+                🔄{' '}
+                {processingStatus.status === 'processing'
+                  ? 'Processing with AI...'
+                  : processingStatus.status === 'completed'
+                    ? 'AI Analysis Complete!'
+                    : processingStatus.status === 'failed'
+                      ? 'Processing Failed'
+                      : 'Processing...'}
+              </Text>
+            </View>
+          )}
+
+          {/* Action Buttons */}
+          <View style={{ width: '100%', maxWidth: 300, gap: 20 }}>
+            {!isScanning && !scanCompleted ? (
+              <TouchableOpacity
+                style={{ 
+                  borderRadius: 25, 
+                  paddingVertical: 16, 
+                  backgroundColor: '#8B5CF6',
+                  shadowColor: '#8B5CF6',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                  elevation: 6
+                }}
+                onPress={startScan}>
+                <Text style={{ textAlign: 'center', fontSize: 18, fontWeight: '600', color: '#FFFFFF' }}>
+                  Start Scan
+                </Text>
               </TouchableOpacity>
-            </View>
-
-            <View className="flex-row justify-center space-x-4">
-              {!isScanning ? (
-                <TouchableOpacity
-                  className="rounded-full bg-[#FFB0D9] px-8 py-4"
-                  onPress={startScan}>
-                  <Text className="text-center text-lg font-semibold text-white">Start Scan</Text>
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity className="rounded-full bg-red-500 px-8 py-4" onPress={stopScan}>
-                  <Text className="text-center text-lg font-semibold text-white">Stop Scan</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {/* Scan Status */}
-            {isScanning && (
-              <View className="mt-4 items-center">
-                <Text className="text-center text-white">
-                  Captured: {capturedImages.length} images
+            ) : isScanning && !scanCompleted ? (
+              <TouchableOpacity 
+                style={{ 
+                  borderRadius: 25, 
+                  paddingVertical: 16, 
+                  backgroundColor: '#EF4444',
+                  shadowColor: '#EF4444',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.3,
+                  shadowRadius: 8,
+                  elevation: 6
+                }}
+                onPress={stopScan}>
+                <Text style={{ textAlign: 'center', fontSize: 18, fontWeight: '600', color: '#FFFFFF' }}>
+                  Stop Scan
                 </Text>
-                <Text className="text-center text-sm text-gray-300">Scanning in progress...</Text>
-              </View>
-            )}
+              </TouchableOpacity>
+            ) : null}
 
-            {scanCompleted && (
-              <View className="mt-4 items-center">
-                <Text className="text-center text-green-400">
-                  ✓ Scan completed! {capturedImages.length} images captured
+            {!scanCompleted && (
+              <TouchableOpacity
+                style={{
+                  borderRadius: 25,
+                  borderWidth: 1,
+                  paddingVertical: 12,
+                  backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                  borderColor: '#8B5CF6',
+                }}
+                onPress={onNavigateToHome}>
+                <Text style={{ textAlign: 'center', fontSize: 16, fontWeight: '500', color: '#8B5CF6' }}>
+                  Cancel
                 </Text>
-              </View>
+              </TouchableOpacity>
             )}
           </View>
-        </CameraView>
+
+          {/* Security Notice */}
+          <View style={{ position: 'absolute', bottom: 32, left: 0, right: 0 }}>
+            <Text style={{ textAlign: 'center', fontSize: 12, color: '#8B5CF6' }}>
+              🔒 Your privacy is protected. Images are encrypted and securely processed with Python
+              AI backend.
+            </Text>
+          </View>
+        </View>
       </View>
 
       <BottomBar

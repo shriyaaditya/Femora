@@ -9,6 +9,10 @@ module.exports = {
         denis: ['DenisMacharov', 'serif'],
         // Don't override default fonts globally - let components choose
       },
+      colors: {
+        'femora-pink': '#FF69B4',
+        'femora-light-pink': '#FFB6C1',
+      },
     },
     // Remove global font overrides to preserve icon fonts
     fontFamily: {
