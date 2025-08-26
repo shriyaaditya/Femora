@@ -233,7 +233,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
       return (
         <View className="w-full space-y-3">
           <TouchableOpacity
-            className="rounded-full p-3 shadow-lg active:scale-95"
+            className="rounded-full p-3 shadow-lg active:scale-95 mb-6"
             style={buttonStyle}
             onPress={() => {
               // Handle "Yes" - start breast scan
