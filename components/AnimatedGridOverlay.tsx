@@ -13,7 +13,7 @@ const AnimatedGridOverlay: React.FC<AnimatedGridOverlayProps> = ({ isActive = tr
 
   // Initialize grid refs for 6x6 grid (36 total cells)
   useEffect(() => {
-    gridRefs.current = Array(36)
+    gridRefs.current = Array(81)
       .fill(null)
       .map(() => new Animated.Value(0));
   }, []);

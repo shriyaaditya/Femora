@@ -22,6 +22,7 @@ interface QuestionnaireProps {
   onStartBreastScan: () => void;
   onNavigateToCalendar?: () => void;
   onNavigateToAskMora?: () => void;
+  onNavigateToAppointments?: () => void;
 }
 
 type FirstScanStep = {
@@ -139,6 +140,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
   onStartBreastScan,
   onNavigateToCalendar,
   onNavigateToAskMora,
+  onNavigateToAppointments,
 }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1);
   const [activeQuestions, setActiveQuestions] = useState<string[]>([]);
@@ -616,10 +618,10 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
       <View
         style={{
           position: 'absolute',
-          bottom: 20,
-          left: -30,
-          width: 300,
-          height: 300,
+          bottom: 0,
+          left: -80,
+          width: 400,
+          height: 400,
           opacity: 0.2, // Reduced opacity for faded effect
           zIndex: -1, // Behind other content
         }}>
@@ -839,7 +841,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
         onHomePress={onNavigateToHome}
         onCalendarPress={onNavigateToCalendar}
         onAIChatPress={onNavigateToAskMora}
-        onDoctorPress={onNavigateToUserProfile}
+        onDoctorPress={onNavigateToAppointments}
         activeTab="scan"
       />
     </SafeAreaView>

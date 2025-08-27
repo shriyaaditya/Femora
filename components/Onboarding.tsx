@@ -9,6 +9,7 @@ import {
   TextInput,
   Alert,
   Platform,
+  Image
 } from 'react-native';
 import Navbar from './Navbar';
 import { useAuth } from '../contexts/AuthContext';
@@ -248,7 +249,28 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => 
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, ...centered, padding: 20 }}
         showsVerticalScrollIndicator={false}>
+<View
+        style={{
+          position: 'absolute',
+          bottom: 150,
+          left: -30,
+          width: 300,
+          height: 300,
+          opacity: 0.2, // Reduced opacity for faded effect
+          zIndex: -1, // Behind other content
+        }}>
+<Image
+          source={require('../assets/onboarding.png')} 
+          style={{
+            width: 500,
+            height: 500,
+          }}
+          resizeMode="contain"
+        />
+        </View>
         <View style={{ width: '100%', maxWidth: 520, ...centered, gap: 18 }}>
+
+        
           <Text style={{ textAlign: 'center', fontSize: 18, fontWeight: '600', color: 'black' }}>
             {q.text}
           </Text>

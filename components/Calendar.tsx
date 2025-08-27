@@ -21,6 +21,7 @@ interface CalendarProps {
   onNavigateToAskMora?: () => void;
   onNavigateToScan?: () => void;
   onNavigateToScanResults?: (scanId: string) => void;
+  onNavigateToAppointments?: () => void;
 }
 
 interface ScanRecord {
@@ -37,6 +38,7 @@ const Calendar: React.FC<CalendarProps> = ({
   onNavigateToAskMora,
   onNavigateToScan,
   onNavigateToScanResults,
+  onNavigateToAppointments,
 }) => {
   const { user } = useAuth();
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -323,7 +325,7 @@ const Calendar: React.FC<CalendarProps> = ({
         onHomePress={onNavigateToHome}
         onCalendarPress={() => {}}
         onAIChatPress={onNavigateToAskMora}
-        onDoctorPress={onNavigateToUserProfile}
+        onDoctorPress={onNavigateToAppointments}
         activeTab="calendar"
       />
     </SafeAreaView>
@@ -396,7 +398,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   selectedDay: {
-    backgroundColor: '#FF66CC',
+    backgroundColor: '#fea1d7',
     borderRadius: 20,
   },
   selectedDayText: {
@@ -441,10 +443,10 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginTop: 15,
     borderWidth: 2,
-    borderColor: '#FF66CC',
+    borderColor: '#fea1d7',
   },
   viewReportText: {
-    color: '#FF66CC',
+    color: '#fea1d7',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -493,7 +495,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   reportBadge: {
-    backgroundColor: '#FF66CC',
+    backgroundColor: '#fea1d7',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 8,

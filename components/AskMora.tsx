@@ -27,6 +27,7 @@ interface AskMoraPageProps {
   onNavigateToUserProfile?: () => void;
   onNavigateToCalendar?: () => void;
   onNavigateToScan?: () => void;
+  onNavigateToAppointments?: () => void;
 }
 
 const AskMoraPage: React.FC<AskMoraPageProps> = ({
@@ -35,6 +36,7 @@ const AskMoraPage: React.FC<AskMoraPageProps> = ({
   onNavigateToUserProfile,
   onNavigateToCalendar,
   onNavigateToScan,
+  onNavigateToAppointments,
 }) => {
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -141,7 +143,7 @@ const AskMoraPage: React.FC<AskMoraPageProps> = ({
         onScanPress={onNavigateToScan}
         onHomePress={onNavigateToHome}
         onAIChatPress={onNavigateToAskMora}
-        onDoctorPress={onNavigateToUserProfile}
+        onDoctorPress={onNavigateToAppointments}
         onCalendarPress={onNavigateToCalendar}
         activeTab="ai"
       />

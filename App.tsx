@@ -10,9 +10,9 @@ import ViewHistory from './components/ViewHistory';
 import UserProfile from './components/UserProfile';
 import Onboarding from './components/Onboarding';
 import BreastScan from './components/BreastScan';
-import ScanReport from './components/ScanReport';
 import ScanResults from './components/ScanResults';
 import Calendar from './components/Calendar';
+import Appointments from './components/Appointments';
 import Login from './components/Login';
 import LoadingPage from './components/LoadingPage';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
@@ -40,6 +40,7 @@ function AppContent() {
     | 'scanReport'
     | 'calendar'
     | 'scanResults'
+    | 'appointments'
   >('home');
   const [scanId, setScanId] = useState<string>('');
   const [showLoading, setShowLoading] = useState(true);
@@ -116,6 +117,7 @@ function AppContent() {
           onLogout={handleLogout}
           onNavigateToUserProfile={onNavigateToUserProfile}
           onNavigateToCalendar={handleNavigateToCalendar}
+          onNavigateToAppointments={handleNavigateToAppointments}
         />
       )}
       {currentScreen === 'askMora' && (
@@ -124,6 +126,7 @@ function AppContent() {
           onNavigateToUserProfile={onNavigateToUserProfile}
           onNavigateToCalendar={handleNavigateToCalendar}
           onNavigateToScan={handleStartScan}
+          onNavigateToAppointments={handleNavigateToAppointments}
         />
       )}
       {currentScreen === 'questionnaire' && (
@@ -133,6 +136,7 @@ function AppContent() {
           onStartBreastScan={handleStartBreastScan}
           onNavigateToCalendar={handleNavigateToCalendar}
           onNavigateToAskMora={handleNavigateToAskMora}
+          onNavigateToAppointments={handleNavigateToAppointments}
         />
       )}
       {currentScreen === 'viewHistory' && (
@@ -155,6 +159,15 @@ function AppContent() {
       {currentScreen === 'onboarding' && (
         <Onboarding onComplete={handleOnboardingComplete} onBackToHome={handleNavigateToHome} />
       )}
+      {currentScreen === 'appointments' && (
+        <Appointments
+          onNavigateToHome={handleNavigateToHome}
+          onNavigateToUserProfile={onNavigateToUserProfile}
+          onNavigateToCalendar={handleNavigateToCalendar}
+          onNavigateToAskMora={handleNavigateToAskMora}
+          onNavigateToScan={handleStartScan}
+        />
+      )}
       {currentScreen === 'breastScan' && (
         <BreastScan
           onNavigateToHome={handleNavigateToHome}
@@ -162,15 +175,7 @@ function AppContent() {
           onNavigateToCalendar={handleNavigateToCalendar}
         />
       )}
-      {currentScreen === 'scanReport' && (
-        <ScanReport
-          scanId={scanId}
-          onNavigateToHome={handleNavigateToHome}
-          onNavigateToScan={handleStartScan}
-          onNavigateToCalendar={handleNavigateToCalendar}
-          onNavigateToAskMora={handleNavigateToAskMora}
-        />
-      )}
+      
       {currentScreen === 'scanResults' && (
         <ScanResults
           scanId={scanId}
@@ -189,6 +194,7 @@ function AppContent() {
           onNavigateToAskMora={handleNavigateToAskMora}
           onNavigateToScan={handleStartScan}
           onNavigateToScanResults={handleNavigateToScanResults}
+          onNavigateToAppointments={handleNavigateToAppointments}
         />
       )}
     </>
@@ -236,6 +242,10 @@ function AppContent() {
 
   function handleNavigateToCalendar() {
     setCurrentScreen('calendar');
+  }
+
+  function handleNavigateToAppointments() {
+    setCurrentScreen('appointments');
   }
 
   function handleNavigateToReport(id: string) {

@@ -26,6 +26,7 @@ interface HomePageProps {
   onLogout?: () => void;
   onNavigateToUserProfile?: () => void;
   onNavigateToCalendar?: () => void;
+  onNavigateToAppointments?: () => void;
 }
 
 const HomePage: React.FC<HomePageProps> = ({
@@ -35,6 +36,7 @@ const HomePage: React.FC<HomePageProps> = ({
   onLogout,
   onNavigateToUserProfile,
   onNavigateToCalendar,
+  onNavigateToAppointments,
 }) => {
   const { user, logout } = useAuth();
   const [displayName, setDisplayName] = useState<string | null>(null);
@@ -569,7 +571,7 @@ const HomePage: React.FC<HomePageProps> = ({
         onHomePress={() => {}}
         onCalendarPress={onNavigateToCalendar}
         onAIChatPress={onNavigateToAskMora}
-        onDoctorPress={onNavigateToUserProfile}
+        onDoctorPress={onNavigateToAppointments}
         activeTab="home"
       />
     </SafeAreaView>
