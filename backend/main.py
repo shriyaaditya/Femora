@@ -46,8 +46,7 @@ CONFIG = {
 try:
     pipeline = SecureImagePipeline(
         key_b64=CONFIG["encryption_key"],
-        gcs_bucket=CONFIG["gcs_bucket"],
-        camera_index=CONFIG["camera_index"]
+        gcs_bucket=CONFIG["gcs_bucket"]
     )
     logger.info("SecureImagePipeline initialized successfully")
 except Exception as e:
@@ -64,31 +63,28 @@ class ImageUploadResponse(BaseModel):
     filename: Optional[str] = None
     message: str
     processingId: Optional[str] = None
+    gcpUrl: Optional[str] = None  # GCP URL for encrypted image
+    firestoreId: Optional[str] = None  # Firestore document ID
 
 class ProcessingStatus(BaseModel):
     status: str  # 'pending', 'processing', 'completed', 'failed'
     progress: int
     result: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
+    gcpUrl: Optional[str] = None  # GCP URL for encrypted image
+    firestoreId: Optional[str] = None  # Firestore document ID
 
-# In-memory storage for processing status (use Redis/DB in production)
-processing_status = {}
+# In-memory storage for processing status (replace with database in production)
+processing_status: Dict[str, Dict[str, Any]] = {}
 
-# Authentication dependency
-async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    # Implement your authentication logic here
-    # For now, accept any valid Bearer token
-    if not credentials.credentials:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid authentication credentials"
-        )
-    return credentials.credentials
+# Mock authentication (replace with proper JWT validation)
+async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)) -> str:
+    # In production, implement proper JWT validation
+    token = credentials.credentials
+    # For now, just return the token as user ID
+    return token
 
-@app.get("/")
-async def root():
-    return {"message": "Breast Scan AI Backend is running"}
-
+# Health check endpoint
 @app.get("/health")
 async def health_check():
     return {
@@ -96,6 +92,65 @@ async def health_check():
         "timestamp": datetime.now().isoformat(),
         "pipeline_ready": pipeline is not None
     }
+
+# NEW: GCP Upload Endpoint - Implements the secure image flow
+@app.post("/api/gcp-upload", response_model=ImageUploadResponse)
+async def gcp_upload_image(
+    request: ImageUploadRequest,
+    token: str = Depends(verify_token)
+):
+    """SECURE IMAGE FLOW: Capture → Encrypt → Upload to GCP → Store Metadata in Firestore"""
+    try:
+        logger.info("🔐 Starting SECURE image flow...")
+        logger.info("⚠️ NO LOCAL IMAGE STORAGE - Images encrypted and sent to GCP only")
+        
+        if not pipeline:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Secure image pipeline not available"
+            )
+
+        # Extract user ID from token (in production, decode JWT)
+        user_id = token
+        
+        # Generate scan ID if not provided
+        scan_id = request.metadata.get('scanId', f"scan_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}")
+        
+        # Process image through secure pipeline
+        result = pipeline.process_image(
+            base64_image=request.image,
+            user_id=user_id,
+            scan_id=scan_id,
+            metadata=request.metadata
+        )
+        
+        if result['success']:
+            logger.info("✅ SECURE image flow completed successfully")
+            logger.info(f"🔒 Image encrypted and stored in GCP: {result['gcp_url']}")
+            logger.info(f"📊 Metadata stored in Firestore: {result['firestore_id']}")
+            
+            return ImageUploadResponse(
+                success=True,
+                message="Image securely processed and stored in GCP",
+                processingId=scan_id,
+                gcpUrl=result['gcp_url'],
+                firestoreId=result['firestore_id']
+            )
+        else:
+            logger.error(f"❌ SECURE image flow failed: {result['error']}")
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Secure image processing failed: {result['error']}"
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"❌ SECURE image flow failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"SECURE image flow failed: {str(e)}"
+        )
 
 @app.post("/api/upload-image", response_model=ImageUploadResponse)
 async def upload_image(
@@ -156,7 +211,7 @@ async def process_image_directly(
     request: ImageUploadRequest,
     token: str = Depends(verify_token)
 ):
-    """Process image directly and return results"""
+    
     try:
         logger.info("Received direct processing request")
         
@@ -199,98 +254,82 @@ async def get_processing_status(
     processing_id: str,
     token: str = Depends(verify_token)
 ):
-    """Get processing status for a specific job"""
-    if processing_id not in processing_status:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Processing ID not found"
-        )
     
-    return ProcessingStatus(**processing_status[processing_id])
-
-async def process_image_async(processing_id: str, image_data: bytes, metadata: Dict[str, Any]):
-    """Process image asynchronously and update status"""
     try:
-        logger.info(f"Starting async processing for {processing_id}")
+        if processing_id not in processing_status:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Processing ID not found"
+            )
+
+        status_data = processing_status[processing_id]
         
+        return ProcessingStatus(
+            status=status_data["status"],
+            progress=status_data.get("progress", 0),
+            result=status_data.get("result"),
+            error=status_data.get("error")
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Status check failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Status check failed: {str(e)}"
+        )
+
+# Helper functions
+async def process_image_async(processing_id: str, image_data: bytes, metadata: Dict[str, Any]):
+    """Process image asynchronously"""
+    try:
         # Update status to processing
         processing_status[processing_id]["status"] = "processing"
         processing_status[processing_id]["progress"] = 25
 
-        # Simulate processing steps
-        await asyncio.sleep(1)
-        processing_status[processing_id]["progress"] = 50
+        # Simulate processing delay
+        await asyncio.sleep(2)
         
-        await asyncio.sleep(1)
+        # Update progress
         processing_status[processing_id]["progress"] = 75
-
-        # Run the actual pipeline
-        filename = pipeline.run_once()
         
-        # Generate mock AI analysis results
-        ai_result = generate_mock_ai_results()
+        # Simulate AI analysis
+        await asyncio.sleep(1)
         
         # Update status to completed
         processing_status[processing_id]["status"] = "completed"
         processing_status[processing_id]["progress"] = 100
-        processing_status[processing_id]["result"] = ai_result
+        processing_status[processing_id]["result"] = {
+            "findings": "Sample analysis results",
+            "confidence": 0.85,
+            "riskLevel": "low",
+            "recommendation": "Continue regular monitoring"
+        }
         
         logger.info(f"Async processing completed for {processing_id}")
-
+        
     except Exception as e:
         logger.error(f"Async processing failed for {processing_id}: {e}")
         processing_status[processing_id]["status"] = "failed"
         processing_status[processing_id]["error"] = str(e)
 
-async def process_image_sync(image_data: bytes, metadata: Dict[str, Any]):
-    """Process image synchronously and return results"""
+async def process_image_sync(image_data: bytes, metadata: Dict[str, Any]) -> Dict[str, Any]:
+    """Process image synchronously"""
     try:
-        logger.info("Starting synchronous processing")
+        # Simulate processing
+        await asyncio.sleep(1)
         
-        # Run the actual pipeline
-        filename = pipeline.run_once()
+        return {
+            "findings": "Synchronous analysis results",
+            "confidence": 0.90,
+            "riskLevel": "low",
+            "recommendation": "Continue regular monitoring"
+        }
         
-        # Generate mock AI analysis results
-        ai_result = generate_mock_ai_results()
-        
-        logger.info("Synchronous processing completed")
-        return ai_result
-
     except Exception as e:
-        logger.error(f"Synchronous processing failed: {e}")
+        logger.error(f"Sync processing failed: {e}")
         raise
-
-def generate_mock_ai_results():
-    """Generate mock AI analysis results"""
-    import random
-    
-    findings_options = [
-        "No significant abnormalities detected",
-        "Minor tissue density variations observed",
-        "Normal breast tissue architecture",
-        "No suspicious masses or calcifications",
-        "Symmetrical breast tissue distribution"
-    ]
-    
-    risk_levels = ["Low", "Low-Medium", "Medium", "Medium-High", "High"]
-    
-    recommendations = [
-        "Continue with regular self-examinations. Schedule follow-up in 6 months.",
-        "Monitor for any changes. Consider follow-up scan in 3 months.",
-        "Maintain current screening schedule. No immediate action required.",
-        "Continue healthy lifestyle practices. Annual screening recommended.",
-        "Schedule consultation with healthcare provider for personalized advice."
-    ]
-    
-    return {
-        "findings": random.choice(findings_options),
-        "confidence": random.randint(80, 98),
-        "riskLevel": random.choice(risk_levels[:3]),  # Bias towards lower risk
-        "recommendation": random.choice(recommendations),
-        "analysisId": f"ai_{datetime.now().strftime('%Y%m%d_%H%M%S_%f')}",
-        "timestamp": datetime.now().isoformat(),
-        "backend": "python-ai"
-    }
 
 if __name__ == "__main__":
     import uvicorn

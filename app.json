@@ -18,12 +18,7 @@
     "assetBundlePatterns": ["**/*", "assets/fonts/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.example.myexpoapp",
-      "config": {
-        "googleSignIn": {
-          "reservedClientId": "REPLACE_WITH_IOS_REVERSED_CLIENT_ID"
-        }
-      }
+      "bundleIdentifier": "com.example.myexpoapp"
     },
     "android": {
       "package": "com.example.myexpoapp",

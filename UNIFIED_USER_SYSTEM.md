@@ -46,19 +46,20 @@ interface UserProfile {
 }
 ```
 
-### 2. Onboarding Data (`users/{uid}/onboarding`)
+### 2. Textual Features (`users/{uid}/textualFeatures`)
 ```typescript
-interface OnboardingData {
-  age: number;
-  pastScan: 'Yes' | 'No';
-  familyHistory: 'Yes' | 'No';
-  pastConditions: string[];
-  periodStartAge: number;
-  status: 'None' | 'Pregnant' | 'Breastfeeding' | 'Post-menopausal';
-  hormonalMeds: 'Yes' | 'No';
-  smokeAlcohol: 'Yes' | 'No';
-  chronic: string[];
+interface TextualFeatures {
   completedAt: Date;
+  age: number;
+  familyHistory: 'Yes' | 'No';
+  lumpsOrThickening: boolean;  // Any lumps or thickening in your breasts
+  chronicHealthIssues: boolean; // Any chronic health issues
+  discomfortOrTenderness: number; // Scale of 0-3: Are you feeling any discomfort or tenderness
+  changeInBreastSize: number;   // Scale of 0-3: Change in size of breasts
+  rednessOrWarmth: boolean;     // Any redness or warmth in the breast region
+  nippleChanges: boolean;       // Discharge or changes like inversion of nipples
+  breastPainOrHeaviness: number; // Scale of 0-5: Any usual pain or heaviness in the breasts
+  smokingStatus: boolean;       // Do you smoke
 }
 ```
 
@@ -99,10 +100,10 @@ interface ChatSession {
 User Signs In → Firebase Auth → user.uid Generated → UserService.getUserProfile()
 ```
 
-### 2. Onboarding Flow
+### 2. Textual Features Flow
 ```
-User Completes Onboarding → UserService.saveOnboardingData(uid, data) → 
-Stored in users/{uid}/onboarding
+User Completes Questionnaire → UserService.saveTextualFeatures(uid, data) → 
+Stored in users/{uid}/textualFeatures
 ```
 
 ### 3. Scan Flow
@@ -147,8 +148,8 @@ Backend Processes → UserService.saveChatSession(uid, sessionId, messages)
 // Get or create user profile
 getUserProfile(user: User): Promise<UserProfile>
 
-// Save onboarding data
-saveOnboardingData(uid: string, data: OnboardingData): Promise<void>
+// Save textual features data
+saveTextualFeatures(uid: string, data: TextualFeatures): Promise<void>
 
 // Create scan session
 createScanSession(userId: string, data: Partial<ScanSession>): Promise<string>
@@ -173,10 +174,10 @@ All components now use the UserService instead of direct Firebase calls:
 ```typescript
 // Before (direct Firebase)
 const userRef = doc(db, 'users', user.uid);
-await setDoc(userRef, { onboarding: data });
+await setDoc(userRef, { textualFeatures: data });
 
 // After (UserService)
-await UserService.saveOnboardingData(user.uid, data);
+await UserService.saveTextualFeatures(user.uid, data);
 ```
 
 ### Mora Chatbot Integration
@@ -221,14 +222,6 @@ User (uid: "abc123")
 │       ├── scanType: "breast-scan"
 │       ├── images: ["base64_3"]
 │       └── analysisResults: {...}
-└── Chat Sessions
-    ├── session_001
-    │   ├── messages: [user_msg_1, bot_response_1]
-    │   └── lastActivity: "2024-01-15"
-    └── session_002
-        ├── messages: [user_msg_2, bot_response_2]
-        └── lastActivity: "2024-01-20"
-```
 
 ## Security Considerations
 
@@ -278,7 +271,7 @@ expect(scan.userId).toBe(user.uid);
 ```typescript
 // Test complete user flow
 const profile = await UserService.getUserProfile(user);
-await UserService.saveOnboardingData(user.uid, onboardingData);
+await UserService.saveTextualFeatures(user.uid, textualFeaturesData);
 const scanId = await UserService.createScanSession(user.uid, scanData);
 await UserService.saveChatSession(user.uid, sessionId, messages);
 

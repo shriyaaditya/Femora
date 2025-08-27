@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,17 @@ import {
   SafeAreaView,
   StatusBar,
   ScrollView,
-  Alert,
+  Dimensions,
   Image,
 } from 'react-native';
-import { useAuth } from '../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth } from '../contexts/AuthContext';
+import { getUserCompleteData } from '../utils/firestoreHelpers';
+import { UserData } from '../services/firestoreService';
+
+const { width: screenWidth } = Dimensions.get('window');
+const isSmallDevice = screenWidth < 375;
+const isMediumDevice = screenWidth >= 375 && screenWidth < 414;
 
 interface UserProfileProps {
   onNavigateToHome: () => void;
@@ -22,16 +27,16 @@ interface UserProfileProps {
 
 interface UserProfileData {
   name: string;
-  age: string;
+  age: string | number;
   email: string;
   profileImage?: string;
-  onboarding?: {
+  onboarding: {
     name?: string;
-    age?: string;
+    age?: number;
     pastScan?: string;
     familyHistory?: string;
-    pastConditions?: string;
-    periodStartAge?: string;
+    pastConditions?: string[];
+    periodStartAge?: number;
     status?: string;
     hormonalMeds?: string;
     smokeAlcohol?: string;
@@ -53,16 +58,15 @@ const UserProfile: React.FC<UserProfileProps> = ({
     const fetchUserProfile = async () => {
       if (user?.id) {
         try {
-          // Try to get onboarding data from local storage
-          const onboardingData = await AsyncStorage.getItem(`onboarding_${user.id}`);
-          if (onboardingData) {
-            const parsed = JSON.parse(onboardingData);
+          // Try to get user data from Firebase
+          const userData = await getUserCompleteData(user.id);
+          if (userData) {
             setUserProfile({
-              name: parsed.onboarding?.name || user.name || 'User',
-              age: parsed.onboarding?.age || 'N/A',
+              name: userData.onboarding?.name || user.name || 'User',
+              age: userData.onboarding?.age || 'N/A',
               email: user.email || '',
               profileImage: undefined,
-              onboarding: parsed.onboarding || {},
+              onboarding: userData.onboarding || {},
             });
           } else {
             // Fallback to basic user data
@@ -75,7 +79,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
             });
           }
         } catch (error) {
-          console.error('Error fetching user profile:', error);
+          console.error('Error fetching user profile from Firebase:', error);
           // Fallback to basic user data
           setUserProfile({
             name: user.name || user.email?.split('@')[0] || 'User',
@@ -94,150 +98,225 @@ const UserProfile: React.FC<UserProfileProps> = ({
   }, [user]);
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Are you sure you want to logout?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Logout',
-        onPress: async () => {
-          await logout();
-        },
-        style: 'destructive',
-      },
-    ]);
+    logout();
+    onNavigateToHome();
   };
-
-  const handleMenuPress = (action: string) => {
-    switch (action) {
-      case 'account':
-        Alert.alert('Account Information', 'Account information functionality coming soon!');
-        break;
-      case 'password':
-        Alert.alert('Password', 'Password change functionality coming soon!');
-        break;
-      case 'settings':
-        Alert.alert('Settings', 'Settings functionality coming soon!');
-        break;
-      case 'help':
-        Alert.alert('Help & Support', 'Help and support functionality coming soon!');
-        break;
-      case 'logout':
-        handleLogout();
-        break;
-    }
-  };
-
-  const MenuItem = ({
-    icon,
-    title,
-    action,
-    isDestructive = false,
-  }: {
-    icon: string;
-    title: string;
-    action: string;
-    isDestructive?: boolean;
-  }) => (
-    <TouchableOpacity
-      className="mb-3 rounded-2xl bg-gray-50 p-4 shadow-sm"
-      onPress={() => handleMenuPress(action)}
-      style={{
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-      }}>
-      <View className="flex-row items-center">
-        <Ionicons name={icon as any} size={24} color={isDestructive ? '#EF4444' : '#6B7280'} />
-        <Text
-          className={`ml-3 text-base font-medium ${
-            isDestructive ? 'text-red-500' : 'text-gray-700'
-          }`}>
-          {title}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
 
   if (loading) {
     return (
-      <SafeAreaView className="flex-1 bg-white">
-        <StatusBar barStyle="dark-content" backgroundColor="#87CEEB" />
-        <View className="flex-1 items-center justify-center">
-          <Text className="text-gray-600">Loading profile...</Text>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#87CEEB' }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: 18, color: 'white' }}>Loading profile...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!userProfile) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#87CEEB' }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ fontSize: 18, color: 'white' }}>Profile not found</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" backgroundColor="#87CEEB" />
-
-      {/* Header with back button */}
-      <View className="flex-row items-center justify-between bg-[#87CEEB] px-4 py-3">
-        <TouchableOpacity onPress={onNavigateToHome}>
-          <Ionicons name="arrow-back" size={24} color="#1F2937" />
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#87CEEB' }}>
+      <StatusBar barStyle="light-content" backgroundColor="#87CEEB" />
+      
+      {/* Header with wave-like curve */}
+      <View style={{ height: 200, backgroundColor: '#87CEEB', position: 'relative' }}>
+        <TouchableOpacity
+          onPress={onNavigateToHome}
+          style={{
+            position: 'absolute',
+            top: 50,
+            left: 20,
+            zIndex: 10,
+          }}>
+          <Ionicons name="arrow-back" size={24} color="white" />
         </TouchableOpacity>
-        <Text className="text-lg font-medium text-gray-800">profile</Text>
-        <View className="w-6" />
+        
+        <Text
+          style={{
+            position: 'absolute',
+            top: 50,
+            left: 0,
+            right: 0,
+            textAlign: 'center',
+            fontSize: 24,
+            fontWeight: 'bold',
+            color: 'white',
+          }}>
+          profile
+        </Text>
+        
+        {/* Wave-like curve */}
+        <View
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 40,
+            backgroundColor: 'white',
+            borderTopLeftRadius: 40,
+            borderTopRightRadius: 40,
+          }}
+        />
       </View>
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {/* Profile Header with Wave Design */}
-        <View className="relative bg-[#87CEEB] pb-8">
-          {/* Wave-like curve at bottom */}
-          <View className="absolute bottom-0 left-0 right-0 h-8 rounded-t-full bg-white" />
-
-          {/* Profile Picture Section */}
-          <View className="items-center pt-6">
-            <View className="relative">
-              <View className="h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-gray-200">
-                {userProfile?.profileImage ? (
-                  <Image
-                    source={{ uri: userProfile.profileImage }}
-                    className="h-full w-full rounded-full"
-                  />
-                ) : (
-                  <Ionicons name="person" size={48} color="#9CA3AF" />
-                )}
-              </View>
-              {/* Camera Icon */}
-              <TouchableOpacity
-                className="absolute bottom-0 right-0 h-8 w-8 items-center justify-center rounded-full bg-gray-300"
-                onPress={() =>
-                  Alert.alert(
-                    'Profile Picture',
-                    'Change profile picture functionality coming soon!'
-                  )
-                }>
-                <Ionicons name="camera" size={16} color="#6B7280" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Name */}
-            <Text className="mt-4 text-2xl font-bold text-gray-800">
-              {userProfile?.name || 'User'}
-            </Text>
-
-            {/* View Full Profile Link */}
+      <ScrollView style={{ flex: 1, backgroundColor: 'white' }}>
+        {/* Profile Picture Section */}
+        <View style={{ alignItems: 'center', marginTop: -50, marginBottom: 30 }}>
+          <View
+            style={{
+              width: 96,
+              height: 96,
+              borderRadius: 48,
+              backgroundColor: '#E7B8FF',
+              justifyContent: 'center',
+              alignItems: 'center',
+              marginBottom: 16,
+              position: 'relative',
+            }}>
+            {userProfile.profileImage ? (
+              <Image
+                source={{ uri: userProfile.profileImage }}
+                style={{ width: 96, height: 96, borderRadius: 48 }}
+              />
+            ) : (
+              <Ionicons name="person" size={48} color="white" />
+            )}
+            
             <TouchableOpacity
-              className="mt-2"
-              onPress={() => {
-                Alert.alert('Full Profile', 'View full profile functionality coming soon!');
+              style={{
+                position: 'absolute',
+                bottom: 0,
+                right: 0,
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: '#E7B8FF',
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderWidth: 2,
+                borderColor: 'white',
               }}>
-              <Text className="text-sm text-gray-600">View full profile</Text>
+              <Ionicons name="camera" size={16} color="white" />
             </TouchableOpacity>
           </View>
+          
+          <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 8 }}>
+            {userProfile.name}
+          </Text>
+          
+          <TouchableOpacity>
+            <Text style={{ color: '#E7B8FF', fontSize: 16, textDecorationLine: 'underline' }}>
+              View full profile
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Menu Options */}
-        <View className="px-4 pb-8 pt-6">
-          <MenuItem icon="person-outline" title="Account Information" action="account" />
-          <MenuItem icon="lock-closed-outline" title="Password" action="password" />
-          <MenuItem icon="settings-outline" title="Settings" action="settings" />
-          <MenuItem icon="call-outline" title="Help & Support" action="help" />
-          <MenuItem icon="log-out-outline" title="Log out" action="logout" isDestructive={true} />
+        <View style={{ paddingHorizontal: 20, marginBottom: 30 }}>
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              padding: 16,
+              backgroundColor: 'white',
+              borderRadius: 16,
+              marginBottom: 12,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 3,
+            }}>
+            <Ionicons name="person-outline" size={24} color="#E7B8FF" style={{ marginRight: 16 }} />
+            <Text style={{ fontSize: 16, fontWeight: '500' }}>Account Information</Text>
+            <Ionicons name="chevron-forward" size={20} color="#ccc" style={{ marginLeft: 'auto' }} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              padding: 16,
+              backgroundColor: 'white',
+              borderRadius: 16,
+              marginBottom: 12,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 3,
+            }}>
+            <Ionicons name="lock-closed-outline" size={24} color="#E7B8FF" style={{ marginRight: 16 }} />
+            <Text style={{ fontSize: 16, fontWeight: '500' }}>Password</Text>
+            <Ionicons name="chevron-forward" size={20} color="#ccc" style={{ marginLeft: 'auto' }} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              padding: 16,
+              backgroundColor: 'white',
+              borderRadius: 16,
+              marginBottom: 12,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 3,
+            }}>
+            <Ionicons name="settings-outline" size={24} color="#E7B8FF" style={{ marginRight: 16 }} />
+            <Text style={{ fontSize: 16, fontWeight: '500' }}>Settings</Text>
+            <Ionicons name="chevron-forward" size={20} color="#ccc" style={{ marginLeft: 'auto' }} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              padding: 16,
+              backgroundColor: 'white',
+              borderRadius: 16,
+              marginBottom: 12,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 3,
+            }}>
+            <Ionicons name="help-circle-outline" size={24} color="#E7B8FF" style={{ marginRight: 16 }} />
+            <Text style={{ fontSize: 16, fontWeight: '500' }}>Help & Support</Text>
+            <Ionicons name="chevron-forward" size={20} color="#ccc" style={{ marginLeft: 'auto' }} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={handleLogout}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              padding: 16,
+              backgroundColor: '#ffebee',
+              borderRadius: 16,
+              marginBottom: 12,
+              shadowColor: '#000',
+              shadowOffset: { width: 0, height: 2 },
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              elevation: 3,
+            }}>
+            <Ionicons name="log-out-outline" size={24} color="#f44336" style={{ marginRight: 16 }} />
+            <Text style={{ fontSize: 16, fontWeight: '500', color: '#f44336' }}>Log out</Text>
+            <Ionicons name="chevron-forward" size={20} color="#ccc" style={{ marginLeft: 'auto' }} />
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>

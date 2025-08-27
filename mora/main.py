@@ -69,7 +69,7 @@ history_aware_prompt = ChatPromptTemplate.from_messages([
 history_aware_retriever = create_history_aware_retriever(llm, retriever, history_aware_prompt)
 
 qa_prompt = ChatPromptTemplate.from_messages([
-    ("system", "You are a helpful assistant named Mora, a breast care health assistant Use the following retrieved context to answer the question. If you don't know the answer, just say that you don't know, don't try to make up an answer. Keep your response concise and short.\n\n{context}"),
+    ("system", "You are Mora, a breast care health assistant. Answer questions concisely in 1-2 sentences. Use retrieved context when available. If unsure, say 'I don't have enough information to answer that question.' Keep responses brief and helpful.\n\n{context}"),
     MessagesPlaceholder("chat_history"),
     ("user", "{input}"),
 ])
@@ -138,6 +138,23 @@ def health_check():
             "status": "unhealthy",
             "error": str(e),
             "timestamp": "2024-01-01T00:00:00Z"  # Fixed: Use string instead of SERVER_TIMESTAMP
+        }), 500
+
+@app.route("/performance", methods=["GET"])
+def performance_info():
+    """Get performance information for the Mora chatbot service"""
+    try:
+        return jsonify({
+            "model": "gemini-1.5-flash",
+            "max_tokens": 100,
+            "optimization": "concise_prompts",
+            "status": "optimized",
+            "timestamp": "2024-01-01T00:00:00Z"
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "error": str(e),
+            "timestamp": "2024-01-01T00:00:00Z"
         }), 500
 
 @app.route("/chat", methods=["POST"])

@@ -102,60 +102,97 @@ const AskMora: React.FC<AskMoraProps> = ({
     setError(null);
   };
 
+  const sendMessageToMora = async (userMessageText: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Show typing indicator
+      setTyping(true);
+
+      // Send message to Mora and get response
+      const moraResponse = await moraService.sendMessage(userMessageText, user?.id);
+
+      // Hide typing indicator
+      setTyping(false);
+
+      // Create empty AI message that will be filled word by word
+      const newMoraMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        text: '',
+        isUser: false,
+        timestamp: new Date(),
+      };
+
+      setMessages((prev) => [...prev, newMoraMessage]);
+
+      // Simulate streaming by adding words one by one
+      const words = moraResponse.split(' ');
+      let currentText = '';
+      
+      for (let i = 0; i < words.length; i++) {
+        currentText += (i === 0 ? '' : ' ') + words[i];
+        
+        // Update the message with current text
+        setMessages((prev) => {
+          const newMessages = [...prev];
+          const lastMessage = newMessages[newMessages.length - 1];
+          if (lastMessage && !lastMessage.isUser) {
+            lastMessage.text = currentText;
+          }
+          return [...newMessages];
+        });
+        
+        // Small delay between words for natural effect
+        await new Promise(resolve => setTimeout(resolve, 50));
+      }
+    } catch (err) {
+      console.error('Error sending message:', err);
+      setError('Failed to send message. Please try again.');
+      Alert.alert('Error', 'Failed to send message. Please try again.');
+    } finally {
+      setLoading(false);
+      setTyping(false);
+    }
+  };
+
   const sendMessage = async () => {
     if (message.trim() && !loading && showChat) {
-      setLoading(true);
-      setError(null);
-      try {
-        const userMessageText = message.trim();
-        const newUserMessage: Message = {
-          id: Date.now().toString(),
-          text: userMessageText,
-          isUser: true,
-          timestamp: new Date(),
-        };
+      const userMessageText = message.trim();
+      const newUserMessage: Message = {
+        id: Date.now().toString(),
+        text: userMessageText,
+        isUser: true,
+        timestamp: new Date(),
+      };
 
-        setMessages((prev) => [...prev, newUserMessage]);
-        setMessage('');
+      setMessages((prev) => [...prev, newUserMessage]);
+      setMessage('');
 
-        // Show typing indicator
-        setTyping(true);
-
-        // Send message to Mora and get response
-        const moraResponse = await moraService.sendMessage(userMessageText, user?.id);
-
-        // Hide typing indicator
-        setTyping(false);
-
-        // Add Mora's response
-        const newMoraMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          text: moraResponse,
-          isUser: false,
-          timestamp: new Date(),
-        };
-
-        setMessages((prev) => [...prev, newMoraMessage]);
-      } catch (err) {
-        console.error('Error sending message:', err);
-        setError('Failed to send message. Please try again.');
-        Alert.alert('Error', 'Failed to send message. Please try again.');
-      } finally {
-        setLoading(false);
-        setTyping(false);
-      }
+      // Send to Mora and get response
+      sendMessageToMora(userMessageText);
     }
   };
 
   const handleInputSubmit = () => {
     if (message.trim()) {
       if (!showChat) {
-        // Start new chat and send the first message
+        // Start new chat and immediately send the first message
+        const userMessageText = message.trim();
         startNewChat();
-        // Send the first message after starting the chat
-        setTimeout(() => {
-          sendMessage();
-        }, 100);
+        
+        // Add user message immediately
+        const newUserMessage: Message = {
+          id: Date.now().toString(),
+          text: userMessageText,
+          isUser: true,
+          timestamp: new Date(),
+        };
+        
+        setMessages([newUserMessage]);
+        setMessage('');
+        
+        // Send to Mora and get response
+        sendMessageToMora(userMessageText);
       } else {
         sendMessage();
       }
@@ -164,11 +201,23 @@ const AskMora: React.FC<AskMoraProps> = ({
 
   const handleInputPress = () => {
     if (message.trim()) {
+      // Start new chat and immediately send the first message
+      const userMessageText = message.trim();
       startNewChat();
-      // Send the first message after starting the chat
-      setTimeout(() => {
-        sendMessage();
-      }, 100);
+      
+      // Add user message immediately
+      const newUserMessage: Message = {
+        id: Date.now().toString(),
+        text: userMessageText,
+        isUser: true,
+        timestamp: new Date(),
+      };
+      
+      setMessages([newUserMessage]);
+      setMessage('');
+      
+      // Send to Mora and get response
+      sendMessageToMora(userMessageText);
     }
   };
 
@@ -239,7 +288,7 @@ const AskMora: React.FC<AskMoraProps> = ({
       }}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <ActivityIndicator size="small" color="#E8D5FF" />
-          <Text style={{ color: '#9CA3AF', fontSize: 14, marginLeft: 8 }}>Mora is typing...</Text>
+          <Text style={{ color: '#9CA3AF', fontSize: 14, marginLeft: 8 }}>Mora is thinking...</Text>
         </View>
       </View>
     </View>

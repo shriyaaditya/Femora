@@ -10,14 +10,17 @@ from langchain.schema import HumanMessage, AIMessage
 # Load environment variables
 load_dotenv()
 
+# Import our configuration
+from config import get_google_api_key, get_server_config
+
 app = Flask(__name__)
 CORS(app)  # Enable CORS for all routes
 
 # --- Configuration & Initialization ---
-api_key = os.getenv("GOOGLE_API_KEY")
+api_key = get_google_api_key()
 
 if not api_key:
-    raise ValueError("GOOGLE_API_KEY not found in environment variables.")
+    raise ValueError("GOOGLE_API_KEY not found in configuration.")
 
 # Initialize LLM
 llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", api_key=api_key)
@@ -127,7 +130,12 @@ def root():
     })
 
 if __name__ == "__main__":
+    server_config = get_server_config()
     print("🚀 Starting Mora Chatbot Backend (Simplified)...")
-    print("📍 Service will be available at: http://localhost:5002")
+    print(f"📍 Service will be available at: http://{server_config['host']}:{server_config['port']}")
     print("🔑 Using Google Gemini AI model")
-    app.run(host="0.0.0.0", port=5002, debug=True)
+    print(f"✅ Google API Key: {'Configured' if api_key else 'Missing'}")
+    
+    app.run(host=server_config['host'], 
+            port=server_config['port'], 
+            debug=server_config['debug'])

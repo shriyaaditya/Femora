@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -6,36 +6,35 @@ import {
   SafeAreaView,
   StatusBar,
   ScrollView,
-  TextInput,
+  Dimensions,
   Alert,
-  Platform,
-  Image
+  TextInput,
 } from 'react-native';
-import Navbar from './Navbar';
 import { useAuth } from '../contexts/AuthContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { saveOnboardingData, validateOnboardingData } from '../utils/firestoreHelpers';
+import { OnboardingData } from '../services/firestoreService';
+
+const { width: screenWidth } = Dimensions.get('window');
+const isSmallDevice = screenWidth < 375;
+const isMediumDevice = screenWidth >= 375 && screenWidth < 414;
 
 interface OnboardingProps {
   onComplete: () => void;
-  onBackToHome?: () => void;
+  onBackToHome: () => void;
 }
-
-type QuestionType = 'yesno' | 'choice' | 'multi' | 'number' | 'text';
 
 interface QuestionDef {
-  id: string;
+  id: keyof OnboardingData;
   text: string;
-  type: QuestionType;
-  options?: string[]; // for choice/multi
+  type: 'text' | 'number' | 'yesno' | 'choice';
   placeholder?: string;
+  options?: string[];
 }
-
-const centered = { alignItems: 'center', justifyContent: 'center' } as const;
 
 const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => {
   const { user, markOnboardingComplete } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<Partial<OnboardingData>>({});
 
   const questions: QuestionDef[] = useMemo(
     () => [
@@ -103,7 +102,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => 
 
   const toggleMulti = (value: string) => {
     setAnswers((prev) => {
-      const existing: string[] = Array.isArray(prev[q.id]) ? prev[q.id] : [];
+      const existing: string[] = Array.isArray(prev[q.id]) ? (prev[q.id] as string[]) : [];
       const next = existing.includes(value)
         ? existing.filter((v) => v !== value)
         : [...existing, value];
@@ -124,199 +123,292 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => 
         return;
       }
 
-      // Save onboarding data to local storage
-      const onboardingData = {
-        userId: user.id,
-        onboarding: { ...answers },
-        onboardingAt: new Date().toISOString(),
-      };
+      // Validate the onboarding data before saving
+      if (!validateOnboardingData(answers)) {
+        Alert.alert('Error', 'Please complete all required fields.');
+        return;
+      }
 
-      await AsyncStorage.setItem(`onboarding_${user.id}`, JSON.stringify(onboardingData));
+      // Save onboarding data to Firebase
+      await saveOnboardingData(user.id, answers);
 
       // Mark onboarding as complete in the auth context
       await markOnboardingComplete();
 
-      Alert.alert('Saved', 'Thanks! Your answers were saved.', [
+      Alert.alert('Saved', 'Thanks! Your answers were saved to Firebase.', [
         { text: 'OK', onPress: onComplete },
       ]);
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'Failed to save onboarding');
+      Alert.alert('Error', e.message || 'Failed to save onboarding data to Firebase');
     }
   };
 
   const Button: React.FC<{ label: string; onPress: () => void; active?: boolean }> = ({
     label,
     onPress,
-    active,
+    active = false,
   }) => (
     <TouchableOpacity
-      onPress={onPress}
-      className="active:scale-95"
       style={{
         borderRadius: 24,
-        paddingVertical: 12,
-        paddingHorizontal: 18,
-        backgroundColor: active ? '#EB9DED' : '#E7B8FF',
+        paddingVertical: isSmallDevice ? 10 : 12,
+        paddingHorizontal: isSmallDevice ? 16 : 20,
+        backgroundColor: active ? '#E7B8FF' : '#F0F0F0',
         borderWidth: 1,
-        borderColor: '#000',
-        marginVertical: 6,
-        alignSelf: 'center',
-        minWidth: 220,
-      }}>
-      <Text style={{ textAlign: 'center', color: active ? '#fff' : '#000', fontWeight: '600' }}>
+        borderColor: active ? '#000' : '#E0E0E0',
+        marginHorizontal: 4,
+        marginVertical: 4,
+      }}
+      onPress={onPress}>
+      <Text
+        style={{
+          textAlign: 'center',
+          color: active ? 'black' : '#666',
+          fontWeight: active ? '600' : '400',
+        }}>
         {label}
       </Text>
     </TouchableOpacity>
   );
 
-  const renderControls = () => {
+  const renderAnswerOptions = () => {
     switch (q.type) {
-      case 'yesno': {
-        const v = answers[q.id];
+      case 'text':
         return (
-          <View style={{ width: '100%', ...centered }}>
-            <Button label="Yes" onPress={() => selectAnswer('Yes')} active={v === 'Yes'} />
-            <Button label="No" onPress={() => selectAnswer('No')} active={v === 'No'} />
+          <TextInput
+            style={{
+              borderWidth: 1,
+              borderColor: '#E0E0E0',
+              borderRadius: 12,
+              padding: 16,
+              fontSize: 16,
+              backgroundColor: 'white',
+              marginBottom: 16,
+            }}
+            placeholder={q.placeholder}
+            value={String(answers[q.id] || '')}
+            onChangeText={(text) => selectAnswer(text)}
+            autoCapitalize="words"
+          />
+        );
+
+      case 'number':
+        return (
+          <TextInput
+            style={{
+              borderWidth: 1,
+              borderColor: '#E0E0E0',
+              borderRadius: 12,
+              padding: 16,
+              fontSize: 16,
+              backgroundColor: 'white',
+              marginBottom: 16,
+            }}
+            placeholder={q.placeholder}
+            value={String(answers[q.id] || '')}
+            onChangeText={(text) => selectAnswer(parseInt(text) || 0)}
+            keyboardType="numeric"
+          />
+        );
+
+      case 'yesno':
+        return (
+          <View style={{ flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <Button
+              label="Yes"
+              onPress={() => selectAnswer('Yes')}
+              active={answers[q.id] === 'Yes'}
+            />
+            <Button
+              label="No"
+              onPress={() => selectAnswer('No')}
+              active={answers[q.id] === 'No'}
+            />
           </View>
         );
-      }
-      case 'choice': {
-        const v = answers[q.id];
+
+      case 'choice':
         return (
-          <View style={{ width: '100%', ...centered }}>
-            {q.options?.map((opt) => (
-              <Button key={opt} label={opt} onPress={() => selectAnswer(opt)} active={v === opt} />
-            ))}
-          </View>
-        );
-      }
-      case 'multi': {
-        const v: string[] = Array.isArray(answers[q.id]) ? answers[q.id] : [];
-        return (
-          <View style={{ width: '100%', ...centered }}>
-            {q.options?.map((opt) => (
+          <View style={{ flexDirection: 'row', justifyContent: 'center', flexWrap: 'wrap' }}>
+            {q.options?.map((option) => (
               <Button
-                key={opt}
-                label={opt}
-                onPress={() => toggleMulti(opt)}
-                active={v.includes(opt)}
+                key={option}
+                label={option}
+                onPress={() => selectAnswer(option)}
+                active={Array.isArray(answers[q.id]) ? (answers[q.id] as string[]).includes(option) : answers[q.id] === option}
               />
             ))}
           </View>
         );
-      }
-      case 'number':
-      case 'text': {
-        const v = answers[q.id] ?? '';
-        return (
-          <View style={{ width: '100%', paddingHorizontal: 24 }}>
-            <TextInput
-              value={String(v)}
-              onChangeText={(t) => selectAnswer(t)}
-              placeholder={q.placeholder}
-              keyboardType={q.type === 'number' ? 'numeric' : 'default'}
-              style={{
-                alignSelf: 'center',
-                width: 260,
-                borderRadius: 16,
-                borderColor: '#ccc',
-                borderWidth: 1,
-                paddingVertical: 12,
-                paddingHorizontal: 14,
-                backgroundColor: '#fff',
-              }}
-            />
-          </View>
-        );
-      }
+
       default:
         return null;
     }
   };
 
+  if (!user) {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+        <Text>Please sign in to continue with onboarding.</Text>
+      </SafeAreaView>
+    );
+  }
+
   return (
-    <SafeAreaView className="flex-1 bg-gradient-to-br from-pink-50 to-white">
-      <StatusBar
-        barStyle={Platform.OS === 'ios' ? 'dark-content' : 'light-content'}
-        backgroundColor="transparent"
-        translucent
-      />
-      <Navbar
-        title={`Onboarding ${currentIndex + 1} / ${questions.length}`}
-        onBack={onBackToHome}
-      />
-
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+      <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <ScrollView
-        contentContainerStyle={{ flexGrow: 1, ...centered, padding: 20 }}
-        showsVerticalScrollIndicator={false}>
-<View
-        style={{
-          position: 'absolute',
-          bottom: 150,
-          left: -30,
-          width: 300,
-          height: 300,
-          opacity: 0.2, // Reduced opacity for faded effect
-          zIndex: -1, // Behind other content
+        contentContainerStyle={{
+          flexGrow: 1,
+          alignItems: 'center',
+          paddingTop: isSmallDevice ? 20 : 32,
+          paddingBottom: isSmallDevice ? 20 : 32,
         }}>
-<Image
-          source={require('../assets/onboarding.png')} 
+        {/* Header */}
+        <View
           style={{
-            width: 500,
-            height: 500,
-          }}
-          resizeMode="contain"
-        />
-        </View>
-        <View style={{ width: '100%', maxWidth: 520, ...centered, gap: 18 }}>
+            width: '100%',
+            maxWidth: isSmallDevice ? 320 : isMediumDevice ? 360 : 400,
+            paddingHorizontal: isSmallDevice ? 16 : 20,
+            marginBottom: isSmallDevice ? 24 : 32,
+          }}>
+          <TouchableOpacity
+            onPress={onBackToHome}
+            style={{
+              alignSelf: 'flex-start',
+              marginBottom: isSmallDevice ? 16 : 24,
+            }}>
+            <Text style={{ fontSize: 18, color: '#666' }}>← Back</Text>
+          </TouchableOpacity>
 
-        
-          <Text style={{ textAlign: 'center', fontSize: 18, fontWeight: '600', color: 'black' }}>
-            {q.text}
+          <Text
+            style={{
+              fontSize: isSmallDevice ? 24 : 28,
+              fontWeight: 'bold',
+              textAlign: 'center',
+              marginBottom: isSmallDevice ? 8 : 12,
+            }}>
+            Welcome to Femora
           </Text>
-          {renderControls()}
+          <Text
+            style={{
+              fontSize: isSmallDevice ? 16 : 18,
+              textAlign: 'center',
+              color: '#666',
+              lineHeight: 24,
+            }}>
+            Let's get to know you better to provide personalized care
+          </Text>
+        </View>
 
+        {/* Progress Indicator */}
+        <View
+          style={{
+            width: '100%',
+            maxWidth: isSmallDevice ? 320 : isMediumDevice ? 360 : 400,
+            paddingHorizontal: isSmallDevice ? 16 : 20,
+            marginBottom: isSmallDevice ? 24 : 32,
+          }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
+            <Text style={{ fontSize: 14, color: '#666' }}>
+              Question {currentIndex + 1} of {questions.length}
+            </Text>
+            <Text style={{ fontSize: 14, color: '#666' }}>
+              {Math.round(((currentIndex + 1) / questions.length) * 100)}%
+            </Text>
+          </View>
           <View
             style={{
-              flexDirection: 'row',
-              justifyContent: 'space-between',
-              width: '100%',
-              maxWidth: 520,
-              marginTop: 20,
-              paddingHorizontal: 12,
+              height: 4,
+              backgroundColor: '#F0F0F0',
+              borderRadius: 2,
+              overflow: 'hidden',
             }}>
-            {currentIndex > 0 ? (
-              <TouchableOpacity
-                onPress={prev}
-                style={{
-                  borderRadius: 20,
-                  paddingVertical: 12,
-                  paddingHorizontal: 18,
-                  backgroundColor: '#ddd',
-                  borderWidth: 1,
-                  borderColor: '#000',
-                }}>
-                <Text style={{ fontWeight: '600' }}>Previous</Text>
-              </TouchableOpacity>
-            ) : (
-              <View />
-            )}
-
-            <TouchableOpacity
-              onPress={next}
+            <View
               style={{
-                borderRadius: 20,
-                paddingVertical: 12,
-                paddingHorizontal: 18,
-                backgroundColor: '#EB9DED',
-                borderWidth: 1,
-                borderColor: '#000',
-              }}>
-              <Text style={{ color: '#fff', fontWeight: '600' }}>
-                {currentIndex === questions.length - 1 ? 'Complete' : 'Next'}
-              </Text>
-            </TouchableOpacity>
+                height: '100%',
+                backgroundColor: '#E7B8FF',
+                width: `${((currentIndex + 1) / questions.length) * 100}%`,
+                borderRadius: 2,
+              }}
+            />
           </View>
+        </View>
+
+        {/* Question */}
+        <View
+          style={{
+            width: '100%',
+            maxWidth: isSmallDevice ? 320 : isMediumDevice ? 360 : 400,
+            paddingHorizontal: isSmallDevice ? 16 : 20,
+            marginBottom: isSmallDevice ? 24 : 32,
+          }}>
+          <Text
+            style={{
+              fontSize: isSmallDevice ? 18 : 20,
+              fontWeight: '600',
+              textAlign: 'center',
+              marginBottom: isSmallDevice ? 16 : 20,
+              lineHeight: 28,
+            }}>
+            {q.text}
+          </Text>
+        </View>
+
+        {/* Answer Options */}
+        <View
+          style={{
+            width: '100%',
+            maxWidth: isSmallDevice ? 320 : isMediumDevice ? 360 : 400,
+            paddingHorizontal: isSmallDevice ? 16 : 20,
+          }}>
+          {renderAnswerOptions()}
+        </View>
+
+        {/* Navigation Buttons */}
+        <View
+          style={{
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            width: '100%',
+            maxWidth: isSmallDevice ? 320 : isMediumDevice ? 360 : 400,
+            paddingHorizontal: isSmallDevice ? 16 : 20,
+            marginTop: isSmallDevice ? 24 : 32,
+          }}>
+          <TouchableOpacity
+            onPress={prev}
+            disabled={currentIndex === 0}
+            style={{
+              paddingVertical: isSmallDevice ? 12 : 16,
+              paddingHorizontal: isSmallDevice ? 20 : 24,
+              borderRadius: 24,
+              backgroundColor: currentIndex === 0 ? '#F0F0F0' : '#E7B8FF',
+              borderWidth: 1,
+              borderColor: currentIndex === 0 ? '#E0E0E0' : '#000',
+            }}>
+            <Text
+              style={{
+                color: currentIndex === 0 ? '#999' : 'black',
+                fontWeight: '600',
+              }}>
+              Previous
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={next}
+            style={{
+              paddingVertical: isSmallDevice ? 12 : 16,
+              paddingHorizontal: isSmallDevice ? 20 : 24,
+              borderRadius: 24,
+              backgroundColor: '#E7B8FF',
+              borderWidth: 1,
+              borderColor: '#000',
+            }}>
+            <Text style={{ color: 'black', fontWeight: '600' }}>
+              {currentIndex === questions.length - 1 ? 'Submit' : 'Next'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
