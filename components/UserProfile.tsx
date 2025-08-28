@@ -160,7 +160,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
         <View className="mx-4 mb-6 rounded-3xl bg-white p-6 shadow-sm">
           {/* Profile Picture */}
           <View className="items-center mb-4">
-            <View className="h-20 w-20 items-center justify-center rounded-full bg-[#D1A9F7] mb-3">
+            <View className="h-20 w-20 items-center justify-center rounded-full bg-[#e5d0f2] mb-3">
               {userProfile?.profileImage ? (
                 <Image
                   source={{ uri: userProfile.profileImage }}

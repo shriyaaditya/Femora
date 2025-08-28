@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Animated, Dimensions } from 'react-native';
+import { View, Animated, Dimensions, Text } from 'react-native';
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
 
@@ -21,7 +21,9 @@ const AnimatedGridOverlay: React.FC<AnimatedGridOverlayProps> = ({ isActive = tr
 
   // Start animations when component mounts or isActive changes
   useEffect(() => {
+    console.log('AnimatedGridOverlay: isActive changed to', isActive);
     if (!isActive) {
+      console.log('AnimatedGridOverlay: Stopping animations');
       // Stop master animation and fade out
       if (masterAnimation.current) {
         masterAnimation.current.stop();
@@ -38,41 +40,41 @@ const AnimatedGridOverlay: React.FC<AnimatedGridOverlayProps> = ({ isActive = tr
     // Fade in when becoming active
     Animated.timing(fadeAnimation, {
       toValue: 1,
-      duration: 300,
+      duration: 100,
       useNativeDriver: false,
     }).start();
 
-    // Add a small delay before starting animations for better visual effect
-    const startDelay = setTimeout(() => {
+          // Add a small delay before starting animations for better visual effect
+      const startDelay = setTimeout(() => {
+        // Create random animations for better visual effect
+        const animations = gridRefs.current.map((animValue, index) => {
+          const randomDelay = Math.random() * 1000; // Random delay up to 1 second
+          const randomDuration = 400 + Math.random() * 600; // Random duration 400-1000ms
 
-    // Create random animations for better visual effect
-    const animations = gridRefs.current.map((animValue, index) => {
-      const randomDelay = Math.random() * 2000; // Random delay up to 2 seconds
-      const randomDuration = 800 + Math.random() * 800; // Random duration 800-1600ms
+          return Animated.sequence([
+            Animated.delay(randomDelay),
+            Animated.loop(
+              Animated.sequence([
+                Animated.timing(animValue, {
+                  toValue: 1,
+                  duration: randomDuration,
+                  useNativeDriver: false,
+                }),
+                Animated.timing(animValue, {
+                  toValue: 0,
+                  duration: randomDuration,
+                  useNativeDriver: false,
+                }),
+              ])
+            ),
+          ]);
+        });
 
-      return Animated.sequence([
-        Animated.delay(randomDelay),
-        Animated.loop(
-          Animated.sequence([
-            Animated.timing(animValue, {
-              toValue: 1,
-              duration: randomDuration,
-              useNativeDriver: false,
-            }),
-            Animated.timing(animValue, {
-              toValue: 0,
-              duration: randomDuration,
-              useNativeDriver: false,
-            }),
-          ])
-        ),
-      ]);
-    });
-
-    // Run all animations in parallel
-    masterAnimation.current = Animated.parallel(animations);
-    masterAnimation.current.start();
-    }, 300); // 300ms delay before starting animations
+        // Run all animations in parallel
+        masterAnimation.current = Animated.parallel(animations);
+        console.log('AnimatedGridOverlay: Starting animations');
+        masterAnimation.current.start();
+      }, 100); // 100ms delay before starting animations
 
     // Cleanup function
     return () => {
@@ -87,21 +89,21 @@ const AnimatedGridOverlay: React.FC<AnimatedGridOverlayProps> = ({ isActive = tr
   // Generate truly random colors for each cell
   const getGridColor = (index: number, animatedValue: Animated.Value) => {
     const colorPalette = [
-      '#FF69B4', // Hot pink
-      '#FFB6C1', // Light pink
-      '#FFC0CB', // Pink
-      '#FF1493', // Deep pink
-      '#DDA0DD', // Plum
-      '#D8BFD8', // Thistle
-      '#9370DB', // Medium purple
-      '#8A2BE2', // Blue violet
-      '#9932CC', // Dark orchid
-      '#BA55D3', // Medium orchid
-      '#DA70D6', // Orchid
-      '#EE82EE', // Violet
-      '#FF00FF', // Magenta
-      '#C71585', // Medium violet red
-      '#DB7093', // Pale violet red
+      '#FFFFFF', // Pure white
+      '#F8F9FA', // Light gray white
+      '#E9ECEF', // Very light gray
+      '#DEE2E6', // Light gray
+      '#CED4DA', // Medium light gray
+      '#ADB5BD', // Medium gray
+      '#6C757D', // Dark gray
+      '#495057', // Darker gray
+      '#343A40', // Very dark gray
+      '#212529', // Almost black
+      '#F1F3F4', // Google gray
+      '#E8EAED', // Light Google gray
+      '#DADCE0', // Medium Google gray
+      '#9AA0A6', // Dark Google gray
+      '#5F6368', // Very dark Google gray
     ];
 
     // Use multiple factors to create more randomness
@@ -117,16 +119,14 @@ const AnimatedGridOverlay: React.FC<AnimatedGridOverlayProps> = ({ isActive = tr
     });
   };
 
-  const gridSize = Math.min(screenWidth, screenHeight) / 9;
+  // Calculate grid size based on available space - make cells larger for better visibility
+  const gridSize = Math.min(360, 460) / 9; // 9x9 grid for 360x360 container
 
-    return (
+        return (
     <Animated.View
       style={{
-        position: 'absolute',
-        top: 80, // Account for navbar height
-        left: 0,
-        right: 0,
-        bottom: 0,
+        width: 400,
+        height: 400,
         justifyContent: 'center',
         alignItems: 'center',
         zIndex: 10,
@@ -135,12 +135,13 @@ const AnimatedGridOverlay: React.FC<AnimatedGridOverlayProps> = ({ isActive = tr
       }}>
       <View
         style={{
-          flexDirection: 'row',
-          flexWrap: 'wrap',
-          width: screenWidth - 48, // Add 24px margin on each side
-          height: screenHeight - 120, // Add 60px margin on top and bottom
-          backgroundColor: 'rgba(139, 92, 246, 0.05)', // Very subtle purple background
-          margin: 24, // Add margin around the entire grid
+          width: 360,
+          height: 360,
+          backgroundColor: 'rgba(108, 117, 125, 0.02)', // Very subtle gray background
+          borderWidth: 1,
+          borderColor: 'rgba(108, 117, 125, 0.1)', // Subtle gray border
+          borderRadius: 8,
+          position: 'relative',
         }}>
         {gridRefs.current.map((animatedValue, index) => {
           const row = Math.floor(index / 9);
@@ -154,11 +155,14 @@ const AnimatedGridOverlay: React.FC<AnimatedGridOverlayProps> = ({ isActive = tr
                 height: gridSize,
                 backgroundColor: getGridColor(index, animatedValue),
                 borderWidth: 0.3,
-                borderColor: 'rgba(255, 255, 255, 0.2)',
+                borderColor: 'rgba(108, 117, 125, 0.15)', // Subtle gray border
                 opacity: animatedValue.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [0.3, 0.8],
+                  outputRange: [0.3, 0.9], // Higher contrast opacity for better visibility
                 }),
+                position: 'absolute',
+                left: col * gridSize,
+                top: row * gridSize,
               }}
             />
           );
