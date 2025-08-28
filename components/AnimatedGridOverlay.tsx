@@ -10,8 +10,9 @@ interface AnimatedGridOverlayProps {
 const AnimatedGridOverlay: React.FC<AnimatedGridOverlayProps> = ({ isActive = true }) => {
   const gridRefs = useRef<Animated.Value[]>([]);
   const masterAnimation = useRef<Animated.CompositeAnimation | null>(null);
+  const fadeAnimation = useRef(new Animated.Value(0)).current;
 
-  // Initialize grid refs for 6x6 grid (36 total cells)
+  // Initialize grid refs for 9x9 grid (81 total cells)
   useEffect(() => {
     gridRefs.current = Array(81)
       .fill(null)
@@ -21,13 +22,28 @@ const AnimatedGridOverlay: React.FC<AnimatedGridOverlayProps> = ({ isActive = tr
   // Start animations when component mounts or isActive changes
   useEffect(() => {
     if (!isActive) {
-      // Stop master animation
+      // Stop master animation and fade out
       if (masterAnimation.current) {
         masterAnimation.current.stop();
         masterAnimation.current = null;
       }
+      Animated.timing(fadeAnimation, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
       return;
     }
+
+    // Fade in when becoming active
+    Animated.timing(fadeAnimation, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+
+    // Add a small delay before starting animations for better visual effect
+    const startDelay = setTimeout(() => {
 
     // Create random animations for better visual effect
     const animations = gridRefs.current.map((animValue, index) => {
@@ -56,9 +72,11 @@ const AnimatedGridOverlay: React.FC<AnimatedGridOverlayProps> = ({ isActive = tr
     // Run all animations in parallel
     masterAnimation.current = Animated.parallel(animations);
     masterAnimation.current.start();
+    }, 300); // 300ms delay before starting animations
 
     // Cleanup function
     return () => {
+      clearTimeout(startDelay);
       if (masterAnimation.current) {
         masterAnimation.current.stop();
         masterAnimation.current = null;
@@ -99,13 +117,13 @@ const AnimatedGridOverlay: React.FC<AnimatedGridOverlayProps> = ({ isActive = tr
     });
   };
 
-  const gridSize = Math.min(screenWidth, screenHeight) / 6;
+  const gridSize = Math.min(screenWidth, screenHeight) / 9;
 
-  return (
-    <View
+    return (
+    <Animated.View
       style={{
         position: 'absolute',
-        top: 0,
+        top: 80, // Account for navbar height
         left: 0,
         right: 0,
         bottom: 0,
@@ -113,17 +131,20 @@ const AnimatedGridOverlay: React.FC<AnimatedGridOverlayProps> = ({ isActive = tr
         alignItems: 'center',
         zIndex: 10,
         pointerEvents: 'none',
+        opacity: fadeAnimation,
       }}>
       <View
         style={{
           flexDirection: 'row',
           flexWrap: 'wrap',
-          width: screenWidth,
-          height: screenHeight,
+          width: screenWidth - 48, // Add 24px margin on each side
+          height: screenHeight - 120, // Add 60px margin on top and bottom
+          backgroundColor: 'rgba(139, 92, 246, 0.05)', // Very subtle purple background
+          margin: 24, // Add margin around the entire grid
         }}>
         {gridRefs.current.map((animatedValue, index) => {
-          const row = Math.floor(index / 6);
-          const col = index % 6;
+          const row = Math.floor(index / 9);
+          const col = index % 9;
 
           return (
             <Animated.View
@@ -136,14 +157,14 @@ const AnimatedGridOverlay: React.FC<AnimatedGridOverlayProps> = ({ isActive = tr
                 borderColor: 'rgba(255, 255, 255, 0.2)',
                 opacity: animatedValue.interpolate({
                   inputRange: [0, 1],
-                  outputRange: [0.2, 0.6],
+                  outputRange: [0.3, 0.8],
                 }),
               }}
             />
           );
         })}
       </View>
-    </View>
+    </Animated.View>
   );
 };
 

@@ -12,6 +12,8 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Navbar from './Navbar';
+import BottomBar from './BottomBar';
 
 interface UserProfileProps {
   onNavigateToHome: () => void;
@@ -106,57 +108,14 @@ const UserProfile: React.FC<UserProfileProps> = ({
     ]);
   };
 
-  const handleMenuPress = (action: string) => {
-    switch (action) {
-      case 'account':
-        Alert.alert('Account Information', 'Account information functionality coming soon!');
-        break;
-      case 'password':
-        Alert.alert('Password', 'Password change functionality coming soon!');
-        break;
-      case 'settings':
-        Alert.alert('Settings', 'Settings functionality coming soon!');
-        break;
-      case 'help':
-        Alert.alert('Help & Support', 'Help and support functionality coming soon!');
-        break;
-      case 'logout':
-        handleLogout();
-        break;
-    }
-  };
-
-  const MenuItem = ({
-    icon,
-    title,
-    action,
-    isDestructive = false,
-  }: {
-    icon: string;
-    title: string;
-    action: string;
-    isDestructive?: boolean;
-  }) => (
-    <TouchableOpacity
-      className="mb-3 rounded-2xl bg-gray-50 p-4 shadow-sm"
-      onPress={() => handleMenuPress(action)}
-      style={{
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-      }}>
-      <View className="flex-row items-center">
-        <Ionicons name={icon as any} size={24} color={isDestructive ? '#EF4444' : '#6B7280'} />
-        <Text
-          className={`ml-3 text-base font-medium ${
-            isDestructive ? 'text-red-500' : 'text-gray-700'
-          }`}>
-          {title}
-        </Text>
+  const InfoField = ({ label, value, icon }: { label: string; value: string; icon: string }) => (
+    <View className="mb-3">
+      <Text className="mb-1 text-xs font-medium text-gray-500">{label}</Text>
+      <View className="flex-row items-center rounded-lg bg-gray-100 px-3 py-2">
+        <Text className="flex-1 text-sm text-gray-700">{value}</Text>
+        <Ionicons name={icon as any} size={16} color="#9CA3AF" />
       </View>
-    </TouchableOpacity>
+    </View>
   );
 
   if (loading) {
@@ -171,75 +130,137 @@ const UserProfile: React.FC<UserProfileProps> = ({
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
-      <StatusBar barStyle="dark-content" backgroundColor="#87CEEB" />
+    <SafeAreaView className="flex-1 bg-[#F8F9FF]">
+      <StatusBar barStyle="dark-content" backgroundColor="#F8F9FF" />
 
-      {/* Header with back button */}
-      <View className="flex-row items-center justify-between bg-[#87CEEB] px-4 py-3">
-        <TouchableOpacity onPress={onNavigateToHome}>
-          <Ionicons name="arrow-back" size={24} color="#1F2937" />
-        </TouchableOpacity>
-        <Text className="text-lg font-medium text-gray-800">profile</Text>
-        <View className="w-6" />
-      </View>
+      <Navbar 
+        title="Profile" 
+        onBack={onNavigateToHome}
+        userProfile={{
+          name: userProfile?.name || 'User',
+          image: userProfile?.profileImage,
+          onPress: () => {},
+        }}
+        rightAction={{
+          label: 'Logout',
+          onPress: handleLogout,
+          style: 'destructive',
+        }}
+      />
 
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
-        {/* Profile Header with Wave Design */}
-        <View className="relative bg-[#87CEEB] pb-8">
-          {/* Wave-like curve at bottom */}
-          <View className="absolute bottom-0 left-0 right-0 h-8 rounded-t-full bg-white" />
-
-          {/* Profile Picture Section */}
-          <View className="items-center pt-6">
-            <View className="relative">
-              <View className="h-24 w-24 items-center justify-center overflow-hidden rounded-full bg-gray-200">
-                {userProfile?.profileImage ? (
-                  <Image
-                    source={{ uri: userProfile.profileImage }}
-                    className="h-full w-full rounded-full"
-                  />
-                ) : (
-                  <Ionicons name="person" size={48} color="#9CA3AF" />
-                )}
-              </View>
-              {/* Camera Icon */}
-              <TouchableOpacity
-                className="absolute bottom-0 right-0 h-8 w-8 items-center justify-center rounded-full bg-gray-300"
-                onPress={() =>
-                  Alert.alert(
-                    'Profile Picture',
-                    'Change profile picture functionality coming soon!'
-                  )
-                }>
-                <Ionicons name="camera" size={16} color="#6B7280" />
-              </TouchableOpacity>
+      <ScrollView 
+        className="flex-1" 
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+        alwaysBounceVertical={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+        scrollEventThrottle={16}
+      >
+        {/* Profile Section */}
+        <View className="mx-4 mb-6 rounded-3xl bg-white p-6 shadow-sm">
+          {/* Profile Picture */}
+          <View className="items-center mb-4">
+            <View className="h-20 w-20 items-center justify-center rounded-full bg-[#D1A9F7] mb-3">
+              {userProfile?.profileImage ? (
+                <Image
+                  source={{ uri: userProfile.profileImage }}
+                  className="h-full w-full rounded-full"
+                />
+              ) : (
+                <Ionicons name="person" size={40} color="white" />
+              )}
             </View>
-
+            
             {/* Name */}
-            <Text className="mt-4 text-2xl font-bold text-gray-800">
+            <Text className="text-xl font-semibold text-[#090809] mb-1">
               {userProfile?.name || 'User'}
             </Text>
-
-            {/* View Full Profile Link */}
-            <TouchableOpacity
-              className="mt-2"
-              onPress={() => {
-                Alert.alert('Full Profile', 'View full profile functionality coming soon!');
-              }}>
-              <Text className="text-sm text-gray-600">View full profile</Text>
-            </TouchableOpacity>
+            
+            {/* Age */}
+            <Text className="text-sm text-[#D1A9F7]">
+              Age: {userProfile?.age || 'N/A'} years
+            </Text>
           </View>
         </View>
 
-        {/* Menu Options */}
-        <View className="px-4 pb-8 pt-6">
-          <MenuItem icon="person-outline" title="Account Information" action="account" />
-          <MenuItem icon="lock-closed-outline" title="Password" action="password" />
-          <MenuItem icon="settings-outline" title="Settings" action="settings" />
-          <MenuItem icon="call-outline" title="Help & Support" action="help" />
-          <MenuItem icon="log-out-outline" title="Log out" action="logout" isDestructive={true} />
+        {/* Information Fields */}
+        <View className="mx-4 mb-6">
+          <InfoField 
+            label="Past Breast Scans" 
+            value={userProfile?.onboarding?.pastScan || 'Not specified'} 
+            icon="scan-outline" 
+          />
+          
+          <InfoField 
+            label="Family History" 
+            value={userProfile?.onboarding?.familyHistory || 'Not specified'} 
+            icon="people-outline" 
+          />
+          
+          <InfoField 
+            label="Past Conditions" 
+            value={userProfile?.onboarding?.pastConditions || 'None'} 
+            icon="medical-outline" 
+          />
+          
+          <InfoField 
+            label="Period Start Age" 
+            value={userProfile?.onboarding?.periodStartAge ? `${userProfile.onboarding.periodStartAge} years` : 'Not specified'} 
+            icon="calendar-outline" 
+          />
+          
+          <InfoField 
+            label="Current Status" 
+            value={userProfile?.onboarding?.status || 'Not specified'} 
+            icon="information-circle-outline" 
+          />
+          
+          <InfoField 
+            label="Hormonal Medication" 
+            value={userProfile?.onboarding?.hormonalMeds || 'Not specified'} 
+            icon="medical-outline" 
+          />
+          
+          <InfoField 
+            label="Smoking/Alcohol" 
+            value={userProfile?.onboarding?.smokeAlcohol || 'Not specified'} 
+            icon="warning-outline" 
+          />
+          
+          <InfoField 
+            label="Chronic Conditions" 
+            value={userProfile?.onboarding?.chronic || 'None'} 
+            icon="heart-outline" 
+          />
         </View>
+
+        {/* Logout Button */}
+        <View className="mx-4 mb-6">
+          <TouchableOpacity
+            className="rounded-xl bg-[#e66a83] py-4 px-6 shadow-sm"
+            onPress={handleLogout}
+            activeOpacity={0.8}>
+            <View className="flex-row items-center justify-center">
+              <Ionicons name="log-out-outline" size={20} color="white" />
+              <Text className="ml-2 text-base font-semibold text-white">Logout</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Extra spacing for better scroll experience */}
+        <View className="h-8" />
+
+
       </ScrollView>
+
+      <BottomBar
+        onScanPress={onNavigateToScan}
+        onHomePress={onNavigateToHome}
+        onCalendarPress={onNavigateToCalendar}
+        onAIChatPress={onNavigateToAskMora}
+        onDoctorPress={() => {}}
+        activeTab="home"
+      />
     </SafeAreaView>
   );
 };
