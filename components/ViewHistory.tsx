@@ -304,7 +304,7 @@ const ViewHistory: React.FC<ViewHistoryProps> = ({
                   {/* Action Button */}
                   <TouchableOpacity
                     style={{
-                      backgroundColor: index === activeIndex ? '#f9d4f4' : '#F3F4F6',
+                      backgroundColor: index === activeIndex ? '#F7ECFD' : '#F3F4F6',
                       paddingVertical: 12,
                       paddingHorizontal: 20,
                       borderRadius: 25,
