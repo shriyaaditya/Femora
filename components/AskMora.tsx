@@ -563,13 +563,13 @@ const AskMora: React.FC<AskMoraProps> = ({
                 multiline={false}
               />
               <TouchableOpacity style={{ marginLeft: 12, padding: 8 }}>
-                <Ionicons name="images-outline" size={24} color="#FF69B4" />
+                <Ionicons name="images-outline" size={24} color="#c5bef4" />
               </TouchableOpacity>
               <TouchableOpacity 
                 style={{ 
                   marginLeft: 8, 
                   padding: 8,
-                  backgroundColor: message.trim() ? '#FF69B4' : '#F3F4F6',
+                  backgroundColor: message.trim() ? '#c5bef4' : '#F3F4F6',
                   borderRadius: 20
                 }}
                 onPress={handleInputSubmit}
@@ -598,7 +598,7 @@ const AskMora: React.FC<AskMoraProps> = ({
                 shadowRadius: 4,
                 elevation: 2
               }}>
-                <Ionicons name="bulb-outline" size={16} color="#FF69B4" style={{ marginRight: 6 }} />
+                <Ionicons name="bulb-outline" size={16} color="#c5bef4" style={{ marginRight: 6 }} />
                 <Text style={{ color: '#2d3748', fontSize: 14, fontWeight: '500' }}>Brainstorm</Text>
               </TouchableOpacity>
               
@@ -615,7 +615,7 @@ const AskMora: React.FC<AskMoraProps> = ({
                 shadowRadius: 4,
                 elevation: 2
               }}>
-                <Ionicons name="image-outline" size={16} color="#FF69B4" style={{ marginRight: 6 }} />
+                <Ionicons name="image-outline" size={16} color="#c5bef4" style={{ marginRight: 6 }} />
                 <Text style={{ color: '#2d3748', fontSize: 14, fontWeight: '500' }}>Image</Text>
               </TouchableOpacity>
               
@@ -632,7 +632,7 @@ const AskMora: React.FC<AskMoraProps> = ({
                 shadowRadius: 4,
                 elevation: 2
               }}>
-                <Ionicons name="code-outline" size={16} color="#FF69B4" style={{ marginRight: 6 }} />
+                <Ionicons name="code-outline" size={16} color="#c5bef4" style={{ marginRight: 6 }} />
                 <Text style={{ color: '#2d3748', fontSize: 14, fontWeight: '500' }}>Code</Text>
               </TouchableOpacity>
             </View>
@@ -643,7 +643,7 @@ const AskMora: React.FC<AskMoraProps> = ({
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <Text style={{ fontSize: 18, fontWeight: '600', color: '#2d3748' }}>Automation</Text>
               <TouchableOpacity>
-                <Text style={{ color: '#FF69B4', fontSize: 14, fontWeight: '500' }}>See all</Text>
+                <Text style={{ color: '#c5bef4', fontSize: 14, fontWeight: '500' }}>See all</Text>
               </TouchableOpacity>
             </View>
             
@@ -664,7 +664,7 @@ const AskMora: React.FC<AskMoraProps> = ({
                     width: 32, 
                     height: 32, 
                     borderRadius: 16, 
-                    backgroundColor: '#FF69B4', 
+                    backgroundColor: '#c5bef4', 
                     alignItems: 'center', 
                     justifyContent: 'center',
                     marginRight: 8
@@ -677,7 +677,7 @@ const AskMora: React.FC<AskMoraProps> = ({
                   "Tell me what Artificial Intelligence?"
                 </Text>
                 <TouchableOpacity style={{ 
-                  backgroundColor: '#FF69B4', 
+                  backgroundColor: '#c5bef4', 
                   paddingVertical: 8, 
                   paddingHorizontal: 16, 
                   borderRadius: 12,
@@ -703,7 +703,7 @@ const AskMora: React.FC<AskMoraProps> = ({
                     width: 32, 
                     height: 32, 
                     borderRadius: 16, 
-                    backgroundColor: '#FF69B4', 
+                    backgroundColor: '#c5bef4', 
                     alignItems: 'center', 
                     justifyContent: 'center',
                     marginRight: 8
@@ -716,7 +716,7 @@ const AskMora: React.FC<AskMoraProps> = ({
                   "How do social media algorithms work?"
                 </Text>
                 <TouchableOpacity style={{ 
-                  backgroundColor: '#FF69B4', 
+                  backgroundColor: '#c5bef4', 
                   paddingVertical: 8, 
                   paddingHorizontal: 16, 
                   borderRadius: 12,
@@ -733,7 +733,7 @@ const AskMora: React.FC<AskMoraProps> = ({
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <Text style={{ fontSize: 18, fontWeight: '600', color: '#2d3748' }}>Recently Chat</Text>
               <TouchableOpacity>
-                <Text style={{ color: '#FF69B4', fontSize: 14, fontWeight: '500' }}>See all</Text>
+                <Text style={{ color: '#c5bef4', fontSize: 14, fontWeight: '500' }}>See all</Text>
               </TouchableOpacity>
             </View>
             
@@ -752,7 +752,7 @@ const AskMora: React.FC<AskMoraProps> = ({
                   width: 32, 
                   height: 32, 
                   borderRadius: 16, 
-                  backgroundColor: '#FF69B4', 
+                  backgroundColor: '#c5bef4', 
                   alignItems: 'center', 
                   justifyContent: 'center',
                   marginRight: 12
