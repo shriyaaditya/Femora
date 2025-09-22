@@ -3,7 +3,6 @@ import {
   View,
   Text,
   TouchableOpacity,
-  SafeAreaView,
   StatusBar,
   Dimensions,
   Alert,
@@ -40,7 +39,7 @@ const HomePage: React.FC<HomePageProps> = ({
 }) => {
   const { user, logout } = useAuth();
   const [displayName, setDisplayName] = useState<string | null>(null);
-  const [streakCount, setStreakCount] = useState<number>(7); // Default streak count
+  const [streakCount] = useState<number>(7); // Default streak count
 
   // Breast Health Care Cards Data
   const breastHealthCards = [
@@ -116,7 +115,7 @@ const HomePage: React.FC<HomePageProps> = ({
   }, [user]);
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       <Navbar
@@ -124,8 +123,7 @@ const HomePage: React.FC<HomePageProps> = ({
         showLogo={true}
         userProfile={{
           name: displayName || user?.email?.split('@')[0] || 'User',
-          image: undefined, // You can add user profile image here later
-          onPress: onNavigateToUserProfile,
+          ...(onNavigateToUserProfile && { onPress: onNavigateToUserProfile }),
         }}
         onNotificationPress={() => {
           // Handle notification press - you can implement this later
@@ -567,14 +565,14 @@ const HomePage: React.FC<HomePageProps> = ({
       </ScrollView>
 
       <BottomBar
-        onScanPress={onStartScan}
         onHomePress={() => {}}
-        onCalendarPress={onNavigateToCalendar}
-        onAIChatPress={onNavigateToAskMora}
-        onDoctorPress={onNavigateToAppointments}
         activeTab="home"
+        {...(onStartScan && { onScanPress: onStartScan })}
+        {...(onNavigateToCalendar && { onCalendarPress: onNavigateToCalendar })}
+        {...(onNavigateToAskMora && { onAIChatPress: onNavigateToAskMora })}
+        {...(onNavigateToAppointments && { onDoctorPress: onNavigateToAppointments })}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 

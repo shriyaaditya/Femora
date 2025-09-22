@@ -3,14 +3,16 @@ import {
   View,
   Text,
   TouchableOpacity,
-  SafeAreaView,
   StatusBar,
   Image,
   ScrollView,
   Dimensions,
+  Alert,
 } from 'react-native';
 import Navbar from './Navbar';
 import BottomBar from './BottomBar';
+import { useAuth } from '../contexts/AuthContext';
+import { saveTextualFeatures } from '../utils/firestoreHelpers';
 
 const { width: screenWidth } = Dimensions.get('window');
 const isSmallDevice = screenWidth < 375;
@@ -148,6 +150,19 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
   const [isGuidedFirstScan, setIsGuidedFirstScan] = useState(false);
   const [guidedIndex, setGuidedIndex] = useState(0);
   const [showPrivateScreening, setShowPrivateScreening] = useState(false);
+  const [guidedScanAnswers, setGuidedScanAnswers] = useState<{
+    lumpsOrThickening: boolean;
+    nippleChanges: boolean;
+    discomfortOrTenderness: number;
+    breastPainOrHeaviness: number;
+  }>({
+    lumpsOrThickening: false,
+    nippleChanges: false,
+    discomfortOrTenderness: 0,
+    breastPainOrHeaviness: 0,
+  });
+
+  const { user } = useAuth();
 
   // Refs
   const howToRef = useRef<View>(null);
@@ -173,6 +188,94 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
     setIsGuidedFirstScan(false);
     setActiveQuestions(questions);
     nextQuestion(0);
+  };
+
+  // New function to handle guided scan answers and extract textual features
+  const handleGuidedScanAnswer = (answer: string) => {
+    const currentStep = guidedFirstScanSteps[guidedIndex];
+    
+    if (!currentStep) return;
+    
+    // Extract textual features data based on the current question
+    switch (currentStep.title) {
+      case 'Feel While Standing/Sitting':
+      case 'Feel While Lying Down':
+        // Both questions relate to lumps or thickening
+        setGuidedScanAnswers(prev => ({
+          ...prev,
+          lumpsOrThickening: answer !== 'No lump felt' && answer !== 'No'
+        }));
+        break;
+        
+      case 'Nipple Check':
+        setGuidedScanAnswers(prev => ({
+          ...prev,
+          nippleChanges: answer !== 'No change'
+        }));
+        break;
+        
+      case 'Discomfort or Tenderness':
+        const discomfortLevel = answer === 'No discomfort' ? 0 : 
+                              answer === 'Mild discomfort' ? 1 : 2;
+        setGuidedScanAnswers(prev => ({
+          ...prev,
+          discomfortOrTenderness: discomfortLevel
+        }));
+        break;
+        
+      case 'Pain or Heaviness':
+        const painLevel = answer === 'No pain' ? 0 : 
+                         answer === 'Mild' ? 1 : 
+                         answer === 'Moderate' ? 2 : 
+                         answer === 'Severe' ? 3 : 4;
+        setGuidedScanAnswers(prev => ({
+          ...prev,
+          breastPainOrHeaviness: painLevel
+        }));
+        break;
+    }
+    
+    // Continue to next question
+    nextQuestion();
+  };
+
+  // Function to save textual features data to Firebase before starting scan
+  const handleStartBreastScanWithData = async () => {
+    try {
+      if (!user) {
+        Alert.alert('Error', 'You must be signed in to save data.');
+        return;
+      }
+
+      // Only save if we have guided scan data (first time users)
+      if (isGuidedFirstScan) {
+        // Prepare textual features data for Firebase
+        const textualFeaturesData = {
+          lumpsOrThickening: guidedScanAnswers.lumpsOrThickening,
+          nippleChanges: guidedScanAnswers.nippleChanges,
+          discomfortOrTenderness: guidedScanAnswers.discomfortOrTenderness,
+          breastPainOrHeaviness: guidedScanAnswers.breastPainOrHeaviness,
+          completedAt: new Date().toISOString(),
+        };
+
+        // Save to Firebase
+        await saveTextualFeatures(user.id, textualFeaturesData);
+        console.log('Textual features saved to Firebase:', textualFeaturesData);
+      }
+
+      // Start the breast scan
+      if (onStartBreastScan) {
+        onStartBreastScan();
+      }
+    } catch (error) {
+      console.error('Error saving textual features:', error);
+      Alert.alert('Warning', 'Data could not be saved, but scan will continue.');
+      
+      // Continue with scan even if save fails
+      if (onStartBreastScan) {
+        onStartBreastScan();
+      }
+    }
   };
 
   const handleStartQuestionnaire = () => {
@@ -238,8 +341,10 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
             className="mb-6 rounded-full p-3 shadow-lg active:scale-95"
             style={buttonStyle}
             onPress={() => {
-              // Handle "Yes" - start breast scan
-              if (onStartBreastScan) {
+              // Handle "Yes" - start breast scan with data saving
+              if (isGuidedFirstScan) {
+                handleStartBreastScanWithData();
+              } else if (onStartBreastScan) {
                 onStartBreastScan();
               } else {
                 onNavigateToHome();
@@ -276,7 +381,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
             width: '100%',
             gap: isSmallDevice ? 12 : 16,
           }}>
-          {step.options.map((label, idx) => (
+          {step?.options?.map((label, idx) => (
             <TouchableOpacity
               key={`${guidedIndex}-opt-${idx}`}
               style={{
@@ -285,7 +390,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
                 ...buttonStyle,
               }}
               className="active:scale-95"
-              onPress={() => nextQuestion()}>
+              onPress={() => handleGuidedScanAnswer(label)}>
               <Text
                 style={{
                   textAlign: 'center',
@@ -551,7 +656,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
         </Text>
 
         <Image
-          source={{ uri: step.imageUri }}
+          source={{ uri: step?.imageUri }}
           style={{
             width: '100%',
             height: isSmallDevice ? 170 : isMediumDevice ? 190 : 180,
@@ -567,7 +672,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
             fontWeight: '600',
             color: 'black',
           }}>
-          {step.title}
+          {step?.title}
         </Text>
         <Text
           style={{
@@ -578,7 +683,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
           }}>
           How to check
         </Text>
-        {step.howTo.map((line, idx) => (
+        {step?.howTo?.map((line, idx) => (
           <View
             key={`howto-${guidedIndex}-${idx}`}
             style={{
@@ -609,7 +714,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gradient-to-br from-pink-50 to-white">
+    <View className="flex-1 bg-gradient-to-br from-pink-50 to-white">
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
       <Navbar title="Self Scan Questionnaire" onBack={onNavigateToHome} />
@@ -711,7 +816,7 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
                   fontSize: isSmallDevice ? 16 : 18,
                   lineHeight: isSmallDevice ? 22 : 24,
                 }}>
-                {guidedFirstScanSteps[guidedIndex].question}
+                {guidedFirstScanSteps[guidedIndex]?.question || 'Please answer the question'}
               </Text>
             </ThoughtBubble>
           ) : activeQuestions.length > 0 && currentQuestionIndex >= 0 ? (
@@ -839,12 +944,12 @@ const Questionnaire: React.FC<QuestionnaireProps> = ({
       <BottomBar
         onScanPress={() => {}} // Scan is already active
         onHomePress={onNavigateToHome}
-        onCalendarPress={onNavigateToCalendar}
-        onAIChatPress={onNavigateToAskMora}
-        onDoctorPress={onNavigateToAppointments}
+        onCalendarPress={onNavigateToCalendar || (() => {})}
+        onAIChatPress={onNavigateToAskMora || (() => {})}
+        onDoctorPress={onNavigateToAppointments || (() => {})}
         activeTab="scan"
       />
-    </SafeAreaView>
+    </View>
   );
 };
 

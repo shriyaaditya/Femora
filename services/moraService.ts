@@ -18,8 +18,8 @@ interface StreamingOptions {
 }
 
 class MoraService {
-  // Use configured backend URL or fallback to the correct local IP
-  private baseUrl: string = process.env.MORA_BACKEND_URL || 'http://192.168.0.115:5002';
+  // Use deployed backend URL directly
+  private baseUrl: string = 'https://femora-mora-backend-896975254795.us-central1.run.app';
   private sessionId: string;
 
   constructor() {
@@ -161,7 +161,7 @@ class MoraService {
     ];
     
     // Return a random fallback response
-    return fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)];
+    return fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)] || "I'm experiencing technical difficulties. Please try again later.";
   }
 
   // Get the current session ID

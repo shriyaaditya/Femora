@@ -762,7 +762,7 @@ const Appointments: React.FC<AppointmentProps> = ({
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <View className="flex-1 bg-white">
       <StatusBar
         barStyle={Platform.OS === 'ios' ? 'dark-content' : 'light-content'}
         backgroundColor="transparent"
@@ -793,7 +793,7 @@ const Appointments: React.FC<AppointmentProps> = ({
         }}
         activeTab="doctor"
       />
-    </SafeAreaView>
+    </View>
   );
 };
 

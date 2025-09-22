@@ -1,42 +1,87 @@
 {
   "expo": {
-    "name": "my-expo-app",
-    "slug": "my-expo-app",
+    "name": "Femora Health",
+    "slug": "femora-health",
     "version": "1.0.0",
-
+    "description": "Professional Breast Health Monitoring & AI-Powered Analysis",
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "githubUrl": "https://github.com/your-org/femora",
     "experiments": {
       "tsconfigPaths": true
     },
-
-    "plugins": [],
-
+    "plugins": [
+      "expo-camera",
+      "expo-file-system",
+      "expo-media-library",
+      "expo-updates"
+    ],
     "orientation": "portrait",
     "icon": "./assets/mora.png",
-
+    "splash": {
+      "image": "./assets/moraLoading.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
     "userInterfaceStyle": "light",
-
-    "assetBundlePatterns": ["**/*", "assets/fonts/*"],
+    "backgroundColor": "#ffffff",
+    "assetBundlePatterns": [
+      "**/*",
+      "assets/fonts/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.example.myexpoapp"
+      "bundleIdentifier": "com.femora.health",
+      "buildNumber": "1",
+      "infoPlist": {
+        "NSCameraUsageDescription": "This app uses the camera to capture breast health images for AI analysis.",
+        "NSPhotoLibraryUsageDescription": "This app accesses your photo library to select images for breast health analysis.",
+        "NSMicrophoneUsageDescription": "This app may use the microphone for voice notes during health assessments."
+      }
     },
     "android": {
-      "package": "com.example.myexpoapp",
+      "package": "com.femora.health",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_NETWORK_STATE",
+        "android.permission.RECORD_AUDIO"
+      ],
       "intentFilters": [
         {
           "action": "VIEW",
           "data": {
-            "scheme": "myexpoapp"
+            "scheme": "femora"
           },
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
-    "scheme": "myexpoapp",
+    "scheme": "femora",
+    "web": {
+      "bundler": "metro"
+    },
     "extra": {
       "expoClientId": "REPLACE_WITH_WEB_CLIENT_ID.apps.googleusercontent.com",
       "iosClientId": "REPLACE_WITH_IOS_CLIENT_ID.apps.googleusercontent.com",
-      "androidClientId": "REPLACE_WITH_ANDROID_CLIENT_ID.apps.googleusercontent.com"
+      "androidClientId": "REPLACE_WITH_ANDROID_CLIENT_ID.apps.googleusercontent.com",
+      "eas": {
+        "projectId": "d9ce7f9f-b938-4e99-8f98-36e3a7ef2705"
+      }
+    },
+    "updates": {
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
     }
   }
 }

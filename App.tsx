@@ -1,22 +1,27 @@
 import './global.css';
+
 import React, { useEffect, useState } from 'react';
-import { Platform, SafeAreaView, Text } from 'react-native';
-import * as NavigationBar from 'expo-navigation-bar';
+import { Platform, SafeAreaView } from 'react-native';
+
 import * as Font from 'expo-font';
-import HomePage from './components/HomePage';
-import AskMora from './components/AskMora';
-import Questionnaire from './components/Questionnaire';
-import ViewHistory from './components/ViewHistory';
-import UserProfile from './components/UserProfile';
-import Onboarding from './components/Onboarding';
-import BreastScan from './components/BreastScan';
-import ScanResults from './components/ScanResults';
-import Calendar from './components/Calendar';
-import Appointments from './components/Appointments';
-import Login from './components/Login';
-import LoadingPage from './components/LoadingPage';
+import * as NavigationBar from 'expo-navigation-bar';
+
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { FontProvider } from './contexts/FontContext';
+
+import Appointments from './components/Appointments';
+import AskMora from './components/AskMora';
+import BreastScan from './components/BreastScan';
+import Calendar from './components/Calendar';
+import HomePage from './components/HomePage';
+import LoadingPage from './components/LoadingPage';
+import Login from './components/Login';
+import Onboarding from './components/Onboarding';
+import Questionnaire from './components/Questionnaire';
+import ScanReport from './components/ScanReport';
+import ScanResults from './components/ScanResults';
+import UserProfile from './components/UserProfile';
+import ViewHistory from './components/ViewHistory';
 
 export default function App() {
   return (
@@ -82,6 +87,7 @@ function AppContent() {
 
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, [loading, fontsLoaded]);
 
   // Check if user needs onboarding after authentication
@@ -108,7 +114,7 @@ function AppContent() {
 
   // Show main app if user is authenticated
   return (
-    <>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       {currentScreen === 'home' && (
         <HomePage
           onNavigateToAskMora={handleNavigateToAskMora}
@@ -146,6 +152,7 @@ function AppContent() {
           onNavigateToCalendar={handleNavigateToCalendar}
           onNavigateToAskMora={handleNavigateToAskMora}
           onNavigateToScan={handleStartScan}
+          onNavigateToScanReport={handleNavigateToReport}
         />
       )}
       {currentScreen === 'userProfile' && (
@@ -186,6 +193,17 @@ function AppContent() {
         />
       )}
 
+      {currentScreen === 'scanReport' && (
+        <ScanReport
+          scanId={scanId}
+          onNavigateToHome={handleNavigateToHome}
+          onNavigateToUserProfile={onNavigateToUserProfile}
+          onNavigateToCalendar={handleNavigateToCalendar}
+          onNavigateToAskMora={handleNavigateToAskMora}
+          onNavigateToReport={handleNavigateToReport}
+        />
+      )}
+
       {currentScreen === 'calendar' && (
         <Calendar
           onNavigateToHome={handleNavigateToHome}
@@ -197,7 +215,7 @@ function AppContent() {
           onNavigateToAppointments={handleNavigateToAppointments}
         />
       )}
-    </>
+    </SafeAreaView>
   );
 
   // Navigation handler functions

@@ -3,10 +3,8 @@ import {
   View,
   Text,
   TouchableOpacity,
-  SafeAreaView,
   StatusBar,
   Alert,
-  ActivityIndicator,
   ScrollView,
   StyleSheet,
 } from 'react-native';
@@ -34,35 +32,79 @@ const BreastScan: React.FC<BreastScanProps> = ({
   const [capturedImages, setCapturedImages] = useState<string[]>([]);
   const [isGridActive, setIsGridActive] = useState(false);
   const [scanCompleted, setScanCompleted] = useState(false);
-  const [facing, setFacing] = useState<'front' | 'back'>('back');
   const [currentStep, setCurrentStep] = useState<'alignment' | 'scanning'>('alignment');
-  const [alignmentStep, setAlignmentStep] = useState(1);
   const [currentImageNumber, setCurrentImageNumber] = useState(1);
-  const [totalImages, setTotalImages] = useState(2);
+  const [totalImages] = useState(2);
   const [processingStatus, setProcessingStatus] = useState<{
     status: 'processing' | 'completed' | 'failed';
     message?: string;
   } | null>(null);
 
+  // NEW: Add processing ID tracking
+  const [processingIds] = useState<string[]>([]);
+  const [detailedStatus, setDetailedStatus] = useState<{
+    [key: string]: {
+      status: 'pending' | 'processing' | 'completed' | 'failed';
+      progress: number;
+      result?: any;
+      error?: string;
+    };
+  }>({});
+
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const [showCamera, setShowCamera] = useState(false);
 
   const cameraRef = useRef<CameraView>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Request camera permission when component mounts
+  useEffect(() => {
+    if (cameraPermission && !cameraPermission.granted) {
+      requestCameraPermission();
+    }
+  }, [cameraPermission, requestCameraPermission]);
 
   const startScan = async () => {
     console.log('Starting scan, activating grid');
     setIsScanning(true);
     setCurrentStep('scanning');
     setIsGridActive(true); // Activate grid animation
+    setShowCamera(true); // Show camera for actual capture
 
     try {
-      // Simulate capturing one image
-      const simulatedImageData = `simulated_image_${currentImageNumber}_${Date.now()}`;
-      setCapturedImages((prev) => [...prev, simulatedImageData]);
+      // Wait for camera to be ready
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Capture actual image from front camera
+      if (cameraRef.current && cameraPermission?.granted) {
+        console.log('📸 Capturing image from front camera...');
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 0.8,
+          base64: true,
+          skipProcessing: false,
+        });
+        
+        if (photo.base64 && typeof photo.base64 === 'string') {
+          console.log('✅ Real image captured from camera');
+          const base64String = photo.base64;
+          setCapturedImages((prev) => [...prev, base64String]);
+          
+          // Process the real image with backend
+          await processImageWithBackend(base64String);
+        } else {
+          throw new Error('Failed to capture image from camera');
+        }
+      } else {
+        // Fallback to simulated capture if camera not available
+        console.log('⚠️ Camera not available, using simulated capture');
+        const simulatedImageData = `simulated_image_${currentImageNumber}_${Date.now()}`;
+        setCapturedImages((prev) => [...prev, simulatedImageData]);
+        await processImageWithBackend(simulatedImageData);
+      }
 
       // Stop animation after capture
       console.log('Image captured, stopping grid animation');
       setIsGridActive(false);
+      setShowCamera(false);
 
       // Update processing status
       if (currentImageNumber === 2) {
@@ -83,14 +125,92 @@ const BreastScan: React.FC<BreastScanProps> = ({
       Alert.alert('Error', 'Failed to capture image');
       setIsScanning(false);
       setIsGridActive(false);
+      setShowCamera(false);
     }
+  };
+
+  // NEW: Process image with backend using GCP upload (immediate processing)
+  const processImageWithBackend = async (imageData: string) => {
+    if (!user) {
+      console.error('No user authenticated');
+      return;
+    }
+
+    try {
+      setProcessingStatus({
+        status: 'processing',
+        message: '🔐 Encrypting and uploading image to GCP...'
+      });
+
+      // Call the secure image service (GCP upload - immediate processing)
+      const result = await SecureImageService.secureImageFlow(
+        imageData,
+        {
+          userId: user.id,
+          scanId: `scan_${Date.now()}`,
+          scanType: 'breast-scan',
+          quality: 95,
+        }
+      );
+
+      if (result.success && result.processingId) {
+        console.log('✅ Image processed successfully:', result);
+        
+        // Store processing ID for reference (this is actually the scan ID)
+        // setProcessingIds(prev => [...prev, result.processingId!]);
+        
+        // GCP upload is immediate processing - no status polling needed
+        // The image is already encrypted and stored in GCP
+        setProcessingStatus({
+          status: 'completed',
+          message: `✅ Image securely processed and stored in GCP! Scan ID: ${result.processingId}`
+        });
+      } else {
+        throw new Error(result.message || 'Processing failed');
+      }
+
+    } catch (error) {
+      console.error('❌ Image processing failed:', error);
+      setProcessingStatus({
+        status: 'failed',
+        message: `Processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      });
+    }
+  };
+
+  // NEW: Poll backend for processing status
+  const startStatusPolling = (processingId: string) => {
+    const pollInterval = setInterval(async () => {
+      try {
+        const status = await SecureImageService.getProcessingStatus(processingId);
+        
+        setDetailedStatus(prev => ({
+          ...prev,
+          [processingId]: status
+        }));
+
+        // Stop polling if processing is complete or failed
+        if (status.status === 'completed' || status.status === 'failed') {
+          clearInterval(pollInterval);
+          console.log(`✅ Status polling stopped for ${processingId}: ${status.status}`);
+        }
+      } catch (error) {
+        console.error(`❌ Failed to get status for ${processingId}:`, error);
+        // Stop polling on error
+        clearInterval(pollInterval);
+      }
+    }, 2000); // Poll every 2 seconds
+
+    // Cleanup after 5 minutes to prevent infinite polling
+    setTimeout(() => {
+      clearInterval(pollInterval);
+    }, 5 * 60 * 1000);
   };
 
   const captureNextImage = () => {
     if (currentImageNumber < totalImages) {
       setCurrentImageNumber(currentImageNumber + 1);
       setCurrentStep('alignment'); // Go back to alignment for next image
-      setAlignmentStep(1); // Reset alignment steps
       setIsGridActive(false); // Stop animation during alignment
       setProcessingStatus(null); // Clear previous status
     } else {
@@ -111,6 +231,35 @@ const BreastScan: React.FC<BreastScanProps> = ({
 
     return orientations[currentImageNumber - 1] || orientations[0];
   };
+
+  const clearOldScanData = async () => {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const scanKeys = keys.filter(key => key.startsWith('breast_scan_'));
+      
+      // Keep only the 5 most recent scans
+      if (scanKeys.length > 5) {
+        const keysToRemove = scanKeys.slice(0, scanKeys.length - 5);
+        await AsyncStorage.multiRemove(keysToRemove);
+        console.log(`🧹 Cleaned up ${keysToRemove.length} old scan records`);
+      }
+    } catch (error) {
+      console.warn('Failed to clear old scan data:', error);
+    }
+  };
+
+  const clearAllScanData = async () => {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const scanKeys = keys.filter(key => key.startsWith('breast_scan_'));
+      
+      if (scanKeys.length > 0) {
+        await AsyncStorage.multiRemove(scanKeys);
+        console.log(`🧹 Cleared all ${scanKeys.length} scan records to free up space`);
+      }
+    } catch (error) {
+      console.warn('Failed to clear all scan data:', error);
+    }
   };
 
   const completeScan = async () => {
@@ -120,18 +269,21 @@ const BreastScan: React.FC<BreastScanProps> = ({
         return;
       }
 
-      // Save scan data locally
+      // Clear all old scan data to fix database full error
+      await clearAllScanData();
+
+      // Save scan metadata locally (without large image data)
       const scanId = `scan_${Date.now()}`;
-      const scanData = {
+      const scanMetadata = {
         scanId,
         userId: user.id,
         timestamp: new Date().toISOString(),
         imageCount: capturedImages.length,
-        images: capturedImages,
+        // Don't store images locally - they're already in GCP
         isSimulated: true,
       };
 
-      await AsyncStorage.setItem(`breast_scan_${scanId}`, JSON.stringify(scanData));
+      await AsyncStorage.setItem(`breast_scan_${scanId}`, JSON.stringify(scanMetadata));
       setScanCompleted(true);
       setIsScanning(false);
       setIsGridActive(false);
@@ -154,10 +306,6 @@ const BreastScan: React.FC<BreastScanProps> = ({
   };
 
   const stopScan = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
     setIsScanning(false);
     setIsGridActive(false);
   };
@@ -178,14 +326,13 @@ const BreastScan: React.FC<BreastScanProps> = ({
   };
 
   const prevAlignmentStep = () => {
-    if (alignmentStep === 1) {
-      setAlignmentStep(1);
-    }
+    // This function is kept for future use but simplified
+    console.log('Previous alignment step');
   };
 
   if (!cameraPermission?.granted) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
         <Navbar title="Breast Scan" onBack={onNavigateToHome} />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 }}>
           <Text style={{ fontSize: 18, textAlign: 'center', marginBottom: 20 }}>
@@ -202,12 +349,12 @@ const BreastScan: React.FC<BreastScanProps> = ({
             <Text style={{ color: 'white', fontSize: 16 }}>Grant Permission</Text>
           </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       <Navbar title="Breast Scan" onBack={onNavigateToHome} />
@@ -367,10 +514,10 @@ const BreastScan: React.FC<BreastScanProps> = ({
                 }}>
                 <View style={{ alignItems: 'center' }}>
                   <Text style={{ fontSize: 48, marginBottom: 16 }}>
-                    {getAlignmentGuidance().emoji}
+                    {getAlignmentGuidance()?.emoji || '📱'}
                   </Text>
                   <Text style={{ fontSize: 16, color: '#6B7280', textAlign: 'center' }}>
-                    {getAlignmentGuidance().title}
+                    {getAlignmentGuidance()?.title || 'Position your device'}
                   </Text>
                 </View>
               </View>
@@ -385,7 +532,7 @@ const BreastScan: React.FC<BreastScanProps> = ({
                   color: '#6B7280',
                   paddingHorizontal: 20,
                 }}>
-                {getAlignmentGuidance().description}
+                {getAlignmentGuidance()?.description || 'Please position your device correctly for scanning.'}
               </Text>
 
               {/* Navigation Buttons */}
@@ -418,6 +565,29 @@ const BreastScan: React.FC<BreastScanProps> = ({
                 alignItems: 'center',
                 justifyContent: 'center',
               }}>
+
+              {/* Hidden Camera View - Captures without showing live preview */}
+              {showCamera && cameraPermission?.granted && (
+                <View style={{
+                  position: 'absolute',
+                  top: -1000, // Hide camera view off-screen
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  zIndex: 1000,
+                  opacity: 0, // Make it invisible
+                }}>
+                  <CameraView
+                    ref={cameraRef}
+                    style={{
+                      flex: 1,
+                      width: '100%',
+                      height: '100%',
+                    }}
+                    facing="front"
+                  />
+                </View>
+              )}
 
 
               {/* Text Below the Animation */}
@@ -453,8 +623,8 @@ const BreastScan: React.FC<BreastScanProps> = ({
                     {scanCompleted
                       ? 'Generating your personalized health report...'
                       : isScanning
-                        ? `Please remain still while we capture Image ${currentImageNumber}...`
-                        : `Image ${currentImageNumber} of ${totalImages} - ${getAlignmentGuidance().description}`}
+                        ? `📸 Front camera capturing Image ${currentImageNumber}... Please remain still`
+                        : `Image ${currentImageNumber} of ${totalImages} - ${getAlignmentGuidance()?.description || 'Position your device'}`}
                   </Text>
                   
                   
@@ -483,6 +653,61 @@ const BreastScan: React.FC<BreastScanProps> = ({
                   </View>
                 )}
 
+                {/* NEW: Detailed Backend Processing Status */}
+                {Object.keys(detailedStatus).length > 0 && (
+                  <View
+                    style={{
+                      marginBottom: 16,
+                      width: '100%',
+                      maxWidth: 300,
+                      borderRadius: 8,
+                      borderWidth: 1,
+                      borderColor: '#10B981',
+                      backgroundColor: '#ECFDF5',
+                      padding: 16,
+                    }}>
+                    <Text style={{ 
+                      textAlign: 'center', 
+                      fontSize: 14, 
+                      fontWeight: '600',
+                      color: '#065F46',
+                      marginBottom: 8
+                    }}>
+                      🔬 Backend Processing Details
+                    </Text>
+                    {Object.entries(detailedStatus).map(([processingId, status]) => (
+                      <View key={processingId} style={{
+                        marginBottom: 8,
+                        padding: 8,
+                        backgroundColor: 'white',
+                        borderRadius: 6,
+                        borderWidth: 1,
+                        borderColor: '#D1FAE5'
+                      }}>
+                        <Text style={{ fontSize: 12, color: '#065F46', fontWeight: '500' }}>
+                          ID: {processingId}
+                        </Text>
+                        <Text style={{ fontSize: 12, color: '#065F46' }}>
+                          Status: {status.status}
+                        </Text>
+                        <Text style={{ fontSize: 12, color: '#065F46' }}>
+                          Progress: {status.progress}%
+                        </Text>
+                        {status.result && (
+                          <Text style={{ fontSize: 12, color: '#065F46' }}>
+                            AI Analysis: {JSON.stringify(status.result, null, 2)}
+                          </Text>
+                        )}
+                        {status.error && (
+                          <Text style={{ fontSize: 12, color: '#FF6B6B' }}>
+                            Error: {status.error}
+                          </Text>
+                        )}
+                      </View>
+                    ))}
+                  </View>
+                )}
+
                 {/* Action Buttons */}
                 <View style={{ width: '100%', maxWidth: 300, gap: 20 }}>
                   {!isScanning && !scanCompleted && capturedImages.length > 0 ? (
@@ -505,7 +730,7 @@ const BreastScan: React.FC<BreastScanProps> = ({
                           fontWeight: '600',
                           color: '#FFFFFF',
                         }}>
-                        {currentImageNumber < totalImages ? 'Capture Image 2' : 'Complete Scan'}
+                        {currentImageNumber < totalImages ? 'Capture Image 2' : 'Generate Report'}
                       </Text>
                     </TouchableOpacity>
                   ) : !isScanning && !scanCompleted ? (
@@ -532,6 +757,35 @@ const BreastScan: React.FC<BreastScanProps> = ({
                       </Text>
                     </TouchableOpacity>
                   ) : null}
+
+                  {/* Generate Report Button - Show after both images are captured */}
+                  {!isScanning && !scanCompleted && capturedImages.length === 2 && (
+                    <TouchableOpacity
+                      style={{
+                        borderRadius: 25,
+                        paddingVertical: 16,
+                        backgroundColor: '#FF6B6B',
+                        shadowColor: '#FF6B6B',
+                        shadowOffset: { width: 0, height: 4 },
+                        shadowOpacity: 0.3,
+                        shadowRadius: 8,
+                        elevation: 6,
+                      }}
+                      onPress={() => {
+                        // Navigate to ViewHistory to see the generated report
+                        onNavigateToReport(`scan_${Date.now()}`);
+                      }}>
+                      <Text
+                        style={{
+                          textAlign: 'center',
+                          fontSize: 18,
+                          fontWeight: '600',
+                          color: '#FFFFFF',
+                        }}>
+                        Generate Report
+                      </Text>
+                    </TouchableOpacity>
+                  )}
 
                   {!scanCompleted && (
                     <TouchableOpacity
@@ -566,7 +820,7 @@ const BreastScan: React.FC<BreastScanProps> = ({
           <View style={{ height: 100 }} />
         </ScrollView>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 

@@ -20,6 +20,7 @@ interface ViewHistoryProps {
   onNavigateToCalendar?: () => void;
   onNavigateToAskMora?: () => void;
   onNavigateToScan?: () => void;
+  onNavigateToScanReport?: (scanId: string) => void;
 }
 
 interface ScanResult {
@@ -39,6 +40,7 @@ const ViewHistory: React.FC<ViewHistoryProps> = ({
   onNavigateToCalendar,
   onNavigateToAskMora,
   onNavigateToScan,
+  onNavigateToScanReport,
 }) => {
   const { user } = useAuth();
   const scrollViewRef = useRef<ScrollView>(null);
@@ -144,7 +146,7 @@ const ViewHistory: React.FC<ViewHistoryProps> = ({
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       <Navbar title="Scan History" onBack={onNavigateToHome} />
@@ -314,8 +316,8 @@ const ViewHistory: React.FC<ViewHistoryProps> = ({
 
                     }}
                     onPress={() => {
-                      // TODO: Navigate to detailed report view
-                      console.log('View detailed report:', scan.id);
+                      // Navigate to detailed report view
+                      onNavigateToScanReport?.(scan.id);
                     }}>
                     <Text style={{ 
                       fontSize: 14, 
@@ -344,7 +346,7 @@ const ViewHistory: React.FC<ViewHistoryProps> = ({
         onDoctorPress={onNavigateToUserProfile}
         activeTab="home"
       />
-    </SafeAreaView>
+    </View>
   );
 };
 

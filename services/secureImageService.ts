@@ -1,18 +1,40 @@
 // Configuration for the Python backend
 const BACKEND_CONFIG = {
-  // Replace with your actual backend URL
-  baseUrl: 'http://localhost:8000/api', // Local development
+  // Backend URL configuration - Use deployed backend for image processing
+  baseUrl: (() => {
+    // Helper function to resolve environment variables with fallbacks
+    const resolveEnvVar = (key: string, fallback: string): string => {
+      const value = process.env[key];
+      if (value && value.includes('${DEV_BACKEND_HOST}')) {
+        // Handle placeholder expansion
+        const backendHost = process.env['DEV_BACKEND_HOST'] || 'localhost';
+        return value.replace('${DEV_BACKEND_HOST}', backendHost);
+      }
+      return value || fallback;
+    };
+
+    const backendUrl = resolveEnvVar('DEV_IMAGE_BACKEND_URL', '');
+    if (backendUrl) {
+      return `${backendUrl}/api`;
+    }
+
+    // Use deployed image backend instead of localhost
+    const host = resolveEnvVar('DEV_IMAGE_BACKEND_HOST', 'femora-image-backend-896975254795.us-central1.run.app');
+    const port = process.env['DEV_IMAGE_BACKEND_PORT'] || '443';
+    const protocol = port === '443' ? 'https' : 'http';
+    return `${protocol}://${host}${port === '443' ? '' : ':' + port}/api`;
+  })(),
   // baseUrl: 'https://your-python-backend.com/api',  // Production
 
   endpoints: {
     upload: '/upload-image',
     process: '/process-image',
-    status: '/status',
+    status: '/api/status', // Fixed: matches backend endpoint
     gcpUpload: '/gcp-upload', // New endpoint for GCP upload
   },
 
-  // AES-256 key (should be stored securely in production)
-  encryptionKey: 'your-base64-encryption-key-here',
+  // AES-256 key from .env file
+  encryptionKey: 'cnSOMavj3WBwig3AItojQJSTgGs5X0HfNw39Xeippu8=',
 };
 
 export interface ImageUploadResponse {
@@ -238,9 +260,23 @@ export class SecureImageService {
    * Get authentication token (implement your auth logic here)
    */
   private async getAuthToken(): Promise<string> {
-    // In production, implement proper authentication
-    // For now, return a placeholder or implement your auth system
-    return 'your-auth-token-here';
+    try {
+      // Import Firebase auth
+      const { auth } = await import('../config/firebase');
+      const { onAuthStateChanged } = await import('firebase/auth');
+      
+      // Get current user
+      const user = auth.currentUser;
+      if (user) {
+        return user.uid; // Use Firebase user ID as token
+      }
+      
+      // If no user, return anonymous token
+      return 'anonymous-user';
+    } catch (error) {
+      console.warn('Failed to get auth token, using fallback:', error);
+      return 'anonymous-user';
+    }
   }
 
   /**

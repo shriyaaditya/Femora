@@ -4,7 +4,6 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
   StatusBar,
   Image,
   ScrollView,
@@ -28,18 +27,18 @@ interface Message {
 }
 
 interface AskMoraProps {
-  onNavigateToHome?: () => void;
+  onNavigateToHome: () => void;
   onNavigateToAskMora?: () => void;
   onNavigateToUserProfile?: () => void;
-  onNavigateToCalendar?: () => void;
-  onNavigateToScan?: () => void;
-  onNavigateToAppointments?: () => void;
+  onNavigateToCalendar: () => void;
+  onNavigateToScan: () => void;
+  onNavigateToAppointments: () => void;
 }
 
 const AskMora: React.FC<AskMoraProps> = ({
   onNavigateToHome,
   onNavigateToAskMora,
-  onNavigateToUserProfile,
+  // onNavigateToUserProfile, // Removed unused prop
   onNavigateToCalendar,
   onNavigateToScan,
   onNavigateToAppointments,
@@ -50,7 +49,6 @@ const AskMora: React.FC<AskMoraProps> = ({
   const [typing, setTyping] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showChat, setShowChat] = useState(false);
-  const [currentChatId, setCurrentChatId] = useState<string>('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const { user } = useAuth();
   const moraService = useRef(new MoraService()).current;
@@ -98,7 +96,6 @@ const AskMora: React.FC<AskMoraProps> = ({
   const startNewChat = () => {
     setShowChat(true);
     setMessages([]);
-    setCurrentChatId(`chat_${Date.now()}`);
     setError(null);
   };
 
@@ -199,32 +196,11 @@ const AskMora: React.FC<AskMoraProps> = ({
     }
   };
 
-  const handleInputPress = () => {
-    if (message.trim()) {
-      // Start new chat and immediately send the first message
-      const userMessageText = message.trim();
-      startNewChat();
-      
-      // Add user message immediately
-      const newUserMessage: Message = {
-        id: Date.now().toString(),
-        text: userMessageText,
-        isUser: true,
-        timestamp: new Date(),
-      };
-      
-      setMessages([newUserMessage]);
-      setMessage('');
-      
-      // Send to Mora and get response
-      sendMessageToMora(userMessageText);
-    }
-  };
+  // Removed unused handleInputPress function - functionality moved to sendMessage
 
   const goBackToHome = () => {
     setShowChat(false);
     setMessages([]);
-    setCurrentChatId('');
     setMessage('');
     setError(null);
   };
@@ -324,7 +300,7 @@ const AskMora: React.FC<AskMoraProps> = ({
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: showChat ? '#F8F9FA' : '#f8f9fa' }}>
+    <View style={{ flex: 1, backgroundColor: showChat ? '#F8F9FA' : '#f8f9fa' }}>
       <StatusBar barStyle="dark-content" backgroundColor={showChat ? '#E8D5FF' : '#f8f9fa'} />
 
       {showChat ? (
@@ -410,7 +386,7 @@ const AskMora: React.FC<AskMoraProps> = ({
                   elevation: 4
                 }}>
                   <Image
-                    source={require('../assets/mora.png')}
+                    source={require('../assets/imageQ.png')}
                     style={{ width: 60, height: 60 }}
                     resizeMode="contain"
                   />
@@ -469,9 +445,6 @@ const AskMora: React.FC<AskMoraProps> = ({
                 returnKeyType="send"
                 multiline={false}
               />
-              <TouchableOpacity style={{ marginLeft: 12, padding: 8 }}>
-                <Ionicons name="attach" size={20} color="#6B7280" />
-              </TouchableOpacity>
               <TouchableOpacity 
                 style={{ 
                   marginLeft: 8, 
@@ -521,7 +494,7 @@ const AskMora: React.FC<AskMoraProps> = ({
               overflow: 'hidden'
             }}>
               <Image
-                source={require('../assets/mora.png')}
+                source={require('../assets/imageQ.png')}
                 style={{ width: 50, height: 50 }}
                 resizeMode="contain"
               />
@@ -562,9 +535,6 @@ const AskMora: React.FC<AskMoraProps> = ({
                 returnKeyType="send"
                 multiline={false}
               />
-              <TouchableOpacity style={{ marginLeft: 12, padding: 8 }}>
-                <Ionicons name="images-outline" size={24} color="#c5bef4" />
-              </TouchableOpacity>
               <TouchableOpacity 
                 style={{ 
                   marginLeft: 8, 
@@ -583,150 +553,8 @@ const AskMora: React.FC<AskMoraProps> = ({
               </TouchableOpacity>
             </View>
 
-            {/* Quick Action Buttons */}
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16, marginBottom: 20 }}>
-              <TouchableOpacity style={{ 
-                backgroundColor: 'white', 
-                paddingHorizontal: 16, 
-                paddingVertical: 10, 
-                borderRadius: 20,
-                flexDirection: 'row',
-                alignItems: 'center',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-                elevation: 2
-              }}>
-                <Ionicons name="bulb-outline" size={16} color="#c5bef4" style={{ marginRight: 6 }} />
-                <Text style={{ color: '#2d3748', fontSize: 14, fontWeight: '500' }}>Brainstorm</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={{ 
-                backgroundColor: 'white', 
-                paddingHorizontal: 16, 
-                paddingVertical: 10, 
-                borderRadius: 20,
-                flexDirection: 'row',
-                alignItems: 'center',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-                elevation: 2
-              }}>
-                <Ionicons name="image-outline" size={16} color="#c5bef4" style={{ marginRight: 6 }} />
-                <Text style={{ color: '#2d3748', fontSize: 14, fontWeight: '500' }}>Image</Text>
-              </TouchableOpacity>
-              
-              <TouchableOpacity style={{ 
-                backgroundColor: 'white', 
-                paddingHorizontal: 16, 
-                paddingVertical: 10, 
-                borderRadius: 20,
-                flexDirection: 'row',
-                alignItems: 'center',
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 1 },
-                shadowOpacity: 0.1,
-                shadowRadius: 4,
-                elevation: 2
-              }}>
-                <Ionicons name="code-outline" size={16} color="#c5bef4" style={{ marginRight: 6 }} />
-                <Text style={{ color: '#2d3748', fontSize: 14, fontWeight: '500' }}>Code</Text>
-              </TouchableOpacity>
-            </View>
           </View>
 
-          {/* Automation Section */}
-          <View style={{ paddingHorizontal: 20, marginBottom: 30 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <Text style={{ fontSize: 18, fontWeight: '600', color: '#2d3748' }}>Automation</Text>
-              <TouchableOpacity>
-                <Text style={{ color: '#c5bef4', fontSize: 14, fontWeight: '500' }}>See all</Text>
-              </TouchableOpacity>
-            </View>
-            
-            <View style={{ flexDirection: 'row', gap: 12 }}>
-              <View style={{ 
-                flex: 1, 
-                backgroundColor: 'white', 
-                borderRadius: 16, 
-                padding: 16,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 8,
-                elevation: 4
-              }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                  <View style={{ 
-                    width: 32, 
-                    height: 32, 
-                    borderRadius: 16, 
-                    backgroundColor: '#c5bef4', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    marginRight: 8
-                  }}>
-                    <Ionicons name="chatbubble-outline" size={18} color="white" />
-                  </View>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#2d3748' }}>Understanding of AI:</Text>
-                </View>
-                <Text style={{ fontSize: 12, color: '#718096', marginBottom: 12, fontStyle: 'italic' }}>
-                  "Tell me what Artificial Intelligence?"
-                </Text>
-                <TouchableOpacity style={{ 
-                  backgroundColor: '#c5bef4', 
-                  paddingVertical: 8, 
-                  paddingHorizontal: 16, 
-                  borderRadius: 12,
-                  alignSelf: 'flex-start'
-                }}>
-                  <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>Generate</Text>
-                </TouchableOpacity>
-              </View>
-
-              <View style={{ 
-                flex: 1, 
-                backgroundColor: 'white', 
-                borderRadius: 16, 
-                padding: 16,
-                shadowColor: '#000',
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.1,
-                shadowRadius: 8,
-                elevation: 4
-              }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                  <View style={{ 
-                    width: 32, 
-                    height: 32, 
-                    borderRadius: 16, 
-                    backgroundColor: '#c5bef4', 
-                    alignItems: 'center', 
-                    justifyContent: 'center',
-                    marginRight: 8
-                  }}>
-                    <Ionicons name="chatbubble-outline" size={18} color="white" />
-                </View>
-                  <Text style={{ fontSize: 14, fontWeight: '600', color: '#2d3748' }}>Social Algorithms:</Text>
-                </View>
-                <Text style={{ fontSize: 12, color: '#718096', marginBottom: 12, fontStyle: 'italic' }}>
-                  "How do social media algorithms work?"
-                </Text>
-                <TouchableOpacity style={{ 
-                  backgroundColor: '#c5bef4', 
-                  paddingVertical: 8, 
-                  paddingHorizontal: 16, 
-                  borderRadius: 12,
-                  alignSelf: 'flex-start'
-                }}>
-                  <Text style={{ color: 'white', fontSize: 12, fontWeight: '600' }}>Generate</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
 
           {/* Recently Chat Section */}
           <View style={{ paddingHorizontal: 20, marginBottom: 100 }}>
@@ -759,7 +587,7 @@ const AskMora: React.FC<AskMoraProps> = ({
                 }}>
                   <Ionicons name="chatbubble-outline" size={18} color="white" />
                 </View>
-                <Text style={{ fontSize: 14, fontWeight: '600', color: '#2d3748' }}>The Value of Reading Books:</Text>
+                <Text style={{ fontSize: 14, fontWeight: '600', color: '#2d3748' }}>Breast Self-Examination Tips:</Text>
               </View>
             </View>
           </View>
@@ -770,14 +598,14 @@ const AskMora: React.FC<AskMoraProps> = ({
         <BottomBar
           onScanPress={onNavigateToScan}
           onHomePress={onNavigateToHome}
-          onAIChatPress={onNavigateToAskMora}
+          onAIChatPress={onNavigateToAskMora || (() => {})}
           onDoctorPress={onNavigateToAppointments}
           onCalendarPress={onNavigateToCalendar}
           activeTab="ai"
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 };
 
-export default AskMora;
+export default AskMora;  

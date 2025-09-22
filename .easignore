@@ -1,0 +1,22 @@
+# Exclude large directories from EAS builds
+mora/
+backend/
+backups/
+docs/
+scripts/
+*.log
+*.backup*
+.env*
+node_modules/
+android/
+ios/
+.expo/
+dist/
+*.pyc
+__pycache__/
+*.sqlite3
+*.db
+chroma_db/
+venv/
+*.backup
+

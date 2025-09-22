@@ -1,15 +1,17 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
-  SafeAreaView,
   StatusBar,
   ScrollView,
   Dimensions,
   Alert,
   TextInput,
+  Image,
+  Animated,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../contexts/AuthContext';
 import { saveOnboardingData, validateOnboardingData } from '../utils/firestoreHelpers';
 import { OnboardingData } from '../services/firestoreService';
@@ -35,6 +37,69 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => 
   const { user, markOnboardingComplete } = useAuth();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Partial<OnboardingData>>({});
+  const [showMoraIntro, setShowMoraIntro] = useState(false);
+  const [moraScale] = useState(new Animated.Value(0));
+  const [moraOpacity] = useState(new Animated.Value(0));
+
+  // Check if user has already seen the mora intro
+  useEffect(() => {
+    const checkMoraIntroSeen = async () => {
+      if (user) {
+        try {
+          const moraIntroKey = `moraIntroSeen_${user.id}`;
+          const hasSeenMoraIntro = await AsyncStorage.getItem(moraIntroKey);
+          
+          if (!hasSeenMoraIntro) {
+            // User hasn't seen it before, show the intro
+            setShowMoraIntro(true);
+          }
+        } catch (error) {
+          console.error('Error checking mora intro status:', error);
+          // If there's an error, show the intro as a fallback
+          setShowMoraIntro(true);
+        }
+      }
+    };
+
+    checkMoraIntroSeen();
+  }, [user]);
+
+  // Animate mora image when component mounts
+  useEffect(() => {
+    if (showMoraIntro) {
+      // Start with scale 0 and opacity 0
+      moraScale.setValue(0);
+      moraOpacity.setValue(0);
+      
+      // Animate to full scale with bounce effect
+      Animated.sequence([
+        Animated.timing(moraOpacity, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.spring(moraScale, {
+          toValue: 1,
+          tension: 100,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [showMoraIntro, moraScale, moraOpacity]);
+
+  const handleContinueToQuestions = async () => {
+    if (user) {
+      try {
+        // Mark that the user has seen the mora intro
+        const moraIntroKey = `moraIntroSeen_${user.id}`;
+        await AsyncStorage.setItem(moraIntroKey, 'true');
+      } catch (error) {
+        console.error('Error saving mora intro status:', error);
+      }
+    }
+    setShowMoraIntro(false);
+  };
 
   const questions: QuestionDef[] = useMemo(
     () => [
@@ -97,18 +162,11 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => 
   const q = questions[currentIndex];
 
   const selectAnswer = (value: any) => {
-    setAnswers((prev) => ({ ...prev, [q.id]: value }));
+    if (q) {
+      setAnswers((prev) => ({ ...prev, [q.id]: value }));
+    }
   };
 
-  const toggleMulti = (value: string) => {
-    setAnswers((prev) => {
-      const existing: string[] = Array.isArray(prev[q.id]) ? (prev[q.id] as string[]) : [];
-      const next = existing.includes(value)
-        ? existing.filter((v) => v !== value)
-        : [...existing, value];
-      return { ...prev, [q.id]: next };
-    });
-  };
 
   const next = () => {
     if (currentIndex < questions.length - 1) setCurrentIndex((i) => i + 1);
@@ -143,6 +201,49 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => 
     }
   };
 
+  const handleSkip = async () => {
+    try {
+      if (!user) {
+        Alert.alert('Error', 'You must be signed in to continue.');
+        return;
+      }
+
+      // Create default onboarding data
+      const defaultAnswers: OnboardingData = {
+        name: user.name || user.email?.split('@')[0] || 'User',
+        age: 25,
+        pastScan: 'No',
+        familyHistory: 'No',
+        pastConditions: ['No'],
+        periodStartAge: 12,
+        status: 'None',
+        hormonalMeds: 'No',
+        smokeAlcohol: 'No',
+        chronic: 'None',
+        lumpsOrThickening: false,
+        chronicHealthIssues: false,
+        discomfortOrTenderness: 0,
+        changeInBreastSize: 0,
+        rednessOrWarmth: false,
+        nippleChanges: false,
+        breastPainOrHeaviness: 0,
+        smokingStatus: false,
+      };
+
+      // Save default onboarding data to Firebase
+      await saveOnboardingData(user.id, defaultAnswers);
+
+      // Mark onboarding as complete in the auth context
+      await markOnboardingComplete();
+
+      Alert.alert('Welcome!', 'You can always update your profile later in settings.', [
+        { text: 'OK', onPress: onComplete },
+      ]);
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to complete onboarding');
+    }
+  };
+
   const Button: React.FC<{ label: string; onPress: () => void; active?: boolean }> = ({
     label,
     onPress,
@@ -172,6 +273,8 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => 
   );
 
   const renderAnswerOptions = () => {
+    if (!q) return null;
+    
     switch (q.type) {
       case 'text':
         return (
@@ -248,14 +351,120 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => 
 
   if (!user) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+      <View style={{ flex: 1, backgroundColor: '#fff' }}>
         <Text>Please sign in to continue with onboarding.</Text>
-      </SafeAreaView>
+      </View>
+    );
+  }
+
+  // Show mora intro screen first
+  if (showMoraIntro) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#fff' }}>
+        <StatusBar barStyle="dark-content" backgroundColor="#fff" />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
+          {/* Back button */}
+          <TouchableOpacity
+            onPress={onBackToHome}
+            style={{
+              position: 'absolute',
+              top: 60,
+              left: 20,
+              zIndex: 1,
+            }}>
+            <Text style={{ fontSize: 18, color: '#666' }}>← Back</Text>
+          </TouchableOpacity>
+
+          {/* Mora Image with Animation */}
+          <Animated.View
+            style={{
+              opacity: moraOpacity,
+              transform: [{ scale: moraScale }],
+              marginBottom: 40,
+            }}>
+            <Image
+              source={require('../assets/mora.png')}
+              style={{
+                width: 200,
+                height: 200,
+                resizeMode: 'contain',
+              }}
+            />
+          </Animated.View>
+
+          {/* Welcome Message */}
+          <Text
+            style={{
+              fontSize: isSmallDevice ? 24 : 28,
+              fontWeight: 'bold',
+              textAlign: 'center',
+              marginBottom: 16,
+              color: '#333',
+              lineHeight: 32,
+            }}>
+            Almost done — let&apos;s finish your bio data together!
+          </Text>
+
+          <Text
+            style={{
+              fontSize: isSmallDevice ? 16 : 18,
+              textAlign: 'center',
+              color: '#666',
+              lineHeight: 24,
+              marginBottom: 40,
+              paddingHorizontal: 20,
+            }}>
+            Let&apos;s get to know you better to provide personalized care
+          </Text>
+
+          {/* Action Buttons */}
+          <View style={{ alignItems: 'center', gap: 16 }}>
+            <TouchableOpacity
+              onPress={handleContinueToQuestions}
+              style={{
+                backgroundColor: '#E7B8FF',
+                paddingVertical: 16,
+                paddingHorizontal: 32,
+                borderRadius: 24,
+                borderWidth: 1,
+                borderColor: '#000',
+              }}>
+              <Text style={{ color: 'black', fontWeight: '600', fontSize: 18 }}>
+                Let&apos;s Begin
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleSkip}
+              style={{
+                backgroundColor: 'transparent',
+                paddingVertical: 12,
+                paddingHorizontal: 24,
+                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: '#E0E0E0',
+              }}>
+              <Text style={{ color: '#666', fontWeight: '500', fontSize: 16 }}>
+                Skip for now
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  // Don't render if no current question
+  if (!q) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#fff' }}>
+        <Text>Loading...</Text>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
+    <View style={{ flex: 1, backgroundColor: '#fff' }}>
       <StatusBar barStyle="dark-content" backgroundColor="#fff" />
       <ScrollView
         contentContainerStyle={{
@@ -297,7 +506,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => 
               color: '#666',
               lineHeight: 24,
             }}>
-            Let's get to know you better to provide personalized care
+            Let&apos;s get to know you better to provide personalized care
           </Text>
         </View>
 
@@ -351,7 +560,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => 
               marginBottom: isSmallDevice ? 16 : 20,
               lineHeight: 28,
             }}>
-            {q.text}
+            {q?.text || ''}
           </Text>
         </View>
 
@@ -365,6 +574,36 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => 
           {renderAnswerOptions()}
         </View>
 
+        {/* Skip Button */}
+        <View
+          style={{
+            width: '100%',
+            maxWidth: isSmallDevice ? 320 : isMediumDevice ? 360 : 400,
+            paddingHorizontal: isSmallDevice ? 16 : 20,
+            marginTop: isSmallDevice ? 16 : 20,
+            alignItems: 'center',
+          }}>
+          <TouchableOpacity
+            onPress={handleSkip}
+            style={{
+              paddingVertical: isSmallDevice ? 8 : 10,
+              paddingHorizontal: isSmallDevice ? 16 : 20,
+              borderRadius: 20,
+              backgroundColor: 'transparent',
+              borderWidth: 1,
+              borderColor: '#E0E0E0',
+            }}>
+            <Text
+              style={{
+                color: '#666',
+                fontWeight: '500',
+                fontSize: isSmallDevice ? 14 : 16,
+              }}>
+              Skip for now
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Navigation Buttons */}
         <View
           style={{
@@ -373,7 +612,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => 
             width: '100%',
             maxWidth: isSmallDevice ? 320 : isMediumDevice ? 360 : 400,
             paddingHorizontal: isSmallDevice ? 16 : 20,
-            marginTop: isSmallDevice ? 24 : 32,
+            marginTop: isSmallDevice ? 16 : 20,
           }}>
           <TouchableOpacity
             onPress={prev}
@@ -411,7 +650,7 @@ const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onBackToHome }) => 
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

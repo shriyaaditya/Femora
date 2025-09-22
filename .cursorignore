@@ -1,0 +1,17 @@
+# Cursor Ignore Configuration
+# This file tells Cursor which files to ignore
+
+# Allow .env files (remove the # to ignore them)
+# .env
+# .env.*
+
+# Ignore common development files
+node_modules/
+.expo/
+dist/
+*.log
+*.pyc
+__pycache__/
+venv/
+.env.backup*
+

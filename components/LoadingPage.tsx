@@ -2,24 +2,22 @@ import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
-  SafeAreaView,
   StatusBar,
   StyleSheet,
   Image,
   Animated,
-  Dimensions,
 } from 'react-native';
 
 interface LoadingPageProps {
   message?: string;
 }
 
-const LoadingPage: React.FC<LoadingPageProps> = ({ message = 'Loading...' }) => {
+const LoadingPage: React.FC<LoadingPageProps> = ({ message = 'Where Privacy meets Preventon' }) => {
   const logoScale = useRef(new Animated.Value(0)).current;
   const logoOpacity = useRef(new Animated.Value(0)).current;
   const textOpacity = useRef(new Animated.Value(0)).current;
   const textTranslateY = useRef(new Animated.Value(20)).current;
-  const dotAnimations = useRef([
+  const dotAnimations = useRef<Animated.Value[]>([
     new Animated.Value(0),
     new Animated.Value(0),
     new Animated.Value(0),
@@ -57,15 +55,18 @@ const LoadingPage: React.FC<LoadingPageProps> = ({ message = 'Loading...' }) => 
 
     // Bouncing dots animation
     const createDotAnimation = (index: number) => {
+      const dotAnimation = dotAnimations[index];
+      if (!dotAnimation) return null;
+      
       return Animated.loop(
         Animated.sequence([
-          Animated.timing(dotAnimations[index], {
+          Animated.timing(dotAnimation, {
             toValue: 1,
             duration: 600,
             delay: index * 200,
             useNativeDriver: true,
           }),
-          Animated.timing(dotAnimations[index], {
+          Animated.timing(dotAnimation, {
             toValue: 0,
             duration: 600,
             useNativeDriver: true,
@@ -74,13 +75,18 @@ const LoadingPage: React.FC<LoadingPageProps> = ({ message = 'Loading...' }) => 
       );
     };
 
-    dotAnimations.forEach((_, index) => {
-      createDotAnimation(index).start();
+    dotAnimations.forEach((dotAnimation, index) => {
+      if (dotAnimation) {
+        const animation = createDotAnimation(index);
+        if (animation) {
+          animation.start();
+        }
+      }
     });
   }, []);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#e2caf9" />
 
       <View style={styles.content}>
@@ -110,28 +116,33 @@ const LoadingPage: React.FC<LoadingPageProps> = ({ message = 'Loading...' }) => 
 
         {/* Bouncing dots */}
         <View style={styles.dotsContainer}>
-          {[0, 1, 2].map((index) => (
-            <Animated.View
-              key={index}
-              style={[
-                styles.dot,
-                {
-                  transform: [
-                    {
-                      translateY: dotAnimations[index].interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [0, -15],
-                      }),
-                    },
-                  ],
-                  opacity: dotAnimations[index].interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.3, 1],
-                  }),
-                },
-              ]}
-            />
-          ))}
+          {[0, 1, 2].map((index) => {
+            const dotAnimation = dotAnimations[index];
+            if (!dotAnimation) return null;
+            
+            return (
+              <Animated.View
+                key={index}
+                style={[
+                  styles.dot,
+                  {
+                    transform: [
+                      {
+                        translateY: dotAnimation.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [0, -15],
+                        }),
+                      },
+                    ],
+                    opacity: dotAnimation.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0.3, 1],
+                    }),
+                  },
+                ]}
+              />
+            );
+          })}
         </View>
 
         {/* Loading message with same animation as brand name */}
@@ -146,13 +157,11 @@ const LoadingPage: React.FC<LoadingPageProps> = ({ message = 'Loading...' }) => 
           {message}
         </Animated.Text>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
 export default LoadingPage;
-
-const { width, height } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
@@ -187,7 +196,7 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(255, 157, 241, 0.3)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
-    fontFamily: 'Italiana',
+    fontFamily: 'DenisMacharov',
   },
   dotsContainer: {
     flexDirection: 'row',

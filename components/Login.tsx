@@ -21,7 +21,7 @@ const Login: React.FC<LoginProps> = ({ onShowProfileForm }) => {
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, signInAnonymously } = useAuth();
 
   const handleAuth = async () => {
     if (!email || !password) {
@@ -48,7 +48,7 @@ const Login: React.FC<LoginProps> = ({ onShowProfileForm }) => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F9F8F2]">
+    <View className="flex-1 bg-[#F9F8F2]">
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
 
       <KeyboardAvoidingView
@@ -106,15 +106,20 @@ const Login: React.FC<LoginProps> = ({ onShowProfileForm }) => {
             </Text>
           </TouchableOpacity>
 
-          {/* Demo Note */}
-          <View className="mt-8 rounded-lg bg-blue-50 p-4">
-            <Text className="text-center text-sm text-blue-600">
-              💡 Demo Mode: Any email/password combination will work for testing
+          {/* Anonymous Sign In */}
+          <TouchableOpacity 
+            className="mt-4 rounded-2xl border border-[#FFB0D9] bg-transparent py-3"
+            onPress={signInAnonymously}
+            disabled={loading}>
+            <Text className="text-center text-base font-semibold text-[#FFB0D9]">
+              Continue as Guest
             </Text>
-          </View>
+          </TouchableOpacity>
+
+         
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 };
 

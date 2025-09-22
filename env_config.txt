@@ -1,0 +1,69 @@
+# ========================================
+# FEMORA ENVIRONMENT CONFIGURATION
+# ========================================
+# Local Storage + Mora Backend Architecture
+# Copy this content to your .env file
+# NEVER commit .env files to version control
+
+# ========================================
+# ENVIRONMENT
+# ========================================
+NODE_ENV=development
+BUILD_NUMBER=1
+
+# ========================================
+# BACKEND CONFIGURATION
+# ========================================
+# Development
+DEV_BACKEND_HOST=192.168.0.115
+DEV_BACKEND_PORT=5002
+DEV_BACKEND_PROTOCOL=http
+DEV_MORA_BACKEND_URL=http://192.168.0.115:5002
+DEV_FRONTEND_HOST=localhost
+DEV_FRONTEND_PORT=8081
+DEV_FRONTEND_PROTOCOL=http
+
+# Production (update these when deploying)
+PROD_MORA_BACKEND_URL=https://mora.femora.com
+PROD_FRONTEND_URL=https://femora.com
+
+# ========================================
+# AI/ML CONFIGURATION
+# ========================================
+# Google Generative AI API Key (REQUIRED for Mora chatbot)
+# Get this from: https://makersuite.google.com/app/apikey
+GOOGLE_API_KEY=AIzaSyCSkCbzoFEUtG_-0QZuq3SY-v5WtlBAVeU
+GOOGLE_MODEL=gemini-1.5-flash
+GOOGLE_MAX_TOKENS=100
+GOOGLE_TEMPERATURE=0.7
+
+# ========================================
+# SECURITY CONFIGURATION
+# ========================================
+# Generate a secure 32-byte key: openssl rand -base64 32
+ENCRYPTION_KEY=cnSOMavj3WBwig3AItojQJSTgGs5X0HfNw39Xeippu8=
+JWT_SECRET_KEY=Nrri8cmbOFoLPFiOo1SHTA7FdVSXKgxYIuVu9d0xnkhPL75zCO+QQJ7bV3VrJumgqQG/VWZIZLKadU+LWB5HTQ==
+SESSION_TIMEOUT=3600000
+MAX_LOGIN_ATTEMPTS=5
+LOCKOUT_DURATION=900000
+
+# ========================================
+# FEATURE FLAGS
+# ========================================
+ENABLE_ADVANCED_SCANNING=true
+ENABLE_OFFLINE_MODE=true
+ENABLE_ANALYTICS=false
+ENABLE_CRASH_REPORTING=false
+
+# ========================================
+# DATABASE CONFIGURATION
+# ========================================
+CHROMA_DB_PATH=./chroma_db
+
+# ========================================
+# LOGGING & MONITORING
+# ========================================
+LOG_LEVEL=info
+ENABLE_DEBUG_LOGGING=false
+ENABLE_PERFORMANCE_MONITORING=false
+

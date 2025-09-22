@@ -117,26 +117,26 @@ const UserProfile: React.FC<UserProfileProps> = ({
 
   if (loading) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#87CEEB' }}>
+      <View style={{ flex: 1, backgroundColor: '#87CEEB' }}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ fontSize: 18, color: 'white' }}>Loading profile...</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   if (!userProfile) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#87CEEB' }}>
+      <View style={{ flex: 1, backgroundColor: '#87CEEB' }}>
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <Text style={{ fontSize: 18, color: 'white' }}>Profile not found</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8F9FF]">
+    <View className="flex-1 bg-[#F8F9FF]">
       <StatusBar barStyle="dark-content" backgroundColor="#F8F9FF" />
 
       <Navbar 
@@ -266,7 +266,7 @@ const UserProfile: React.FC<UserProfileProps> = ({
         onDoctorPress={() => {}}
         activeTab="home"
       />
-    </SafeAreaView>
+    </View>
   );
 };
 

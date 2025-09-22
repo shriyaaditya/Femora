@@ -1,11 +1,21 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { 
+  signInAnonymously, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  User as FirebaseUser
+} from 'firebase/auth';
+import { auth } from '../config/firebase';
+import { FirestoreService } from '../services/firestoreService';
 
 interface User {
   id: string;
   email: string;
   name?: string;
   hasCompletedOnboarding?: boolean;
+  isAnonymous?: boolean;
 }
 
 interface AuthContextType {
@@ -13,6 +23,7 @@ interface AuthContextType {
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
+  signInAnonymously: () => Promise<void>;
   logout: () => Promise<void>;
   markOnboardingComplete: () => Promise<void>;
 }
@@ -30,101 +41,128 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing user in local storage
-    const checkUser = async () => {
-      try {
-        const userData = await AsyncStorage.getItem('user');
-        if (userData) {
-          setUser(JSON.parse(userData));
+    // Listen for Firebase authentication state changes
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: FirebaseUser | null) => {
+      if (firebaseUser) {
+        try {
+          // Check if user has completed onboarding from Firestore
+          const firestoreService = FirestoreService.getInstance();
+          const userDataFromFirestore = await firestoreService.getUserData(firebaseUser.uid);
+          const hasCompletedOnboarding = userDataFromFirestore?.profile?.onboardingCompleted || false;
+          
+          // User is signed in
+          const userData: User = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email || 'anonymous@femora.com',
+            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+            hasCompletedOnboarding: hasCompletedOnboarding,
+            isAnonymous: firebaseUser.isAnonymous
+          };
+          
+          console.log('🔍 Firebase user authenticated:', userData);
+          setUser(userData);
+        } catch (error) {
+          console.error('Error checking onboarding completion:', error);
+          // Fallback to assuming onboarding is not complete
+          const userData: User = {
+            id: firebaseUser.uid,
+            email: firebaseUser.email || 'anonymous@femora.com',
+            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+            hasCompletedOnboarding: false,
+            isAnonymous: firebaseUser.isAnonymous
+          };
+          setUser(userData);
         }
-      } catch (error) {
-        console.error('Error reading user data:', error);
-      } finally {
-        setLoading(false);
+      } else {
+        // User is signed out
+        console.log('🔍 No Firebase user authenticated');
+        setUser(null);
       }
-    };
+      setLoading(false);
+    });
 
-    checkUser();
+    return () => unsubscribe();
   }, []);
+
+  const handleSignInAnonymously = async () => {
+    try {
+      console.log('🔍 Attempting anonymous sign in...');
+      const result = await signInAnonymously(auth);
+      console.log('🔍 Anonymous sign in successful:', result.user.uid);
+    } catch (error: any) {
+      console.error('Anonymous sign in error:', error);
+      throw new Error('Failed to sign in anonymously: ' + error.message);
+    }
+  };
 
   const signIn = async (email: string, password: string) => {
     try {
-      // Simple validation - in a real app, you'd verify against a backend
       if (!email || !password) {
         throw new Error('Email and password are required');
       }
 
-      // Check if user already exists
-      const existingUserData = await AsyncStorage.getItem('user');
-      if (existingUserData) {
-        const existingUser = JSON.parse(existingUserData);
-        // For existing users signing in, always mark onboarding as complete
-        existingUser.hasCompletedOnboarding = true;
-        await AsyncStorage.setItem('user', JSON.stringify(existingUser));
-        setUser(existingUser);
-        return;
-      }
-
-      // Create a mock user (in a real app, this would come from your backend)
-      const mockUser: User = {
-        id: Date.now().toString(),
-        email,
-        name: email.split('@')[0], // Use email prefix as name
-        hasCompletedOnboarding: true, // Existing users signing in should never see onboarding
-      };
-
-      // Store user data locally
-      await AsyncStorage.setItem('user', JSON.stringify(mockUser));
-      setUser(mockUser);
-    } catch (error) {
+      console.log('🔍 Attempting email sign in...');
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      console.log('🔍 Email sign in successful:', result.user.uid);
+    } catch (error: any) {
       console.error('Sign in error:', error);
-      throw error;
+      throw new Error('Sign in failed: ' + error.message);
     }
   };
 
   const signUp = async (email: string, password: string) => {
     try {
-      // Simple validation
       if (!email || !password) {
         throw new Error('Email and password are required');
       }
 
-      // Create a new user
-      const newUser: User = {
-        id: Date.now().toString(),
-        email,
-        name: email.split('@')[0],
-        hasCompletedOnboarding: false, // New users haven't completed onboarding
-      };
-
-      // Store user data locally
-      await AsyncStorage.setItem('user', JSON.stringify(newUser));
-      setUser(newUser);
-    } catch (error) {
+      console.log('🔍 Attempting email sign up...');
+      const result = await createUserWithEmailAndPassword(auth, email, password);
+      console.log('🔍 Email sign up successful:', result.user.uid);
+    } catch (error: any) {
       console.error('Sign up error:', error);
-      throw error;
+      throw new Error('Sign up failed: ' + error.message);
     }
   };
 
   const markOnboardingComplete = async () => {
     if (user) {
-      const updatedUser = { ...user, hasCompletedOnboarding: true };
-      await AsyncStorage.setItem('user', JSON.stringify(updatedUser));
-      setUser(updatedUser);
+      try {
+        // Update onboarding completion in Firestore
+        const firestoreService = FirestoreService.getInstance();
+        await firestoreService.markOnboardingCompleted(user.id);
+        
+        // Update local state
+        const updatedUser = { ...user, hasCompletedOnboarding: true };
+        setUser(updatedUser);
+        console.log('🔍 Onboarding marked as complete for user:', user.id);
+      } catch (error) {
+        console.error('Error marking onboarding complete:', error);
+        throw new Error('Failed to mark onboarding as complete: ' + error);
+      }
     }
   };
 
   const logout = async () => {
     try {
-      await AsyncStorage.removeItem('user');
-      setUser(null);
+      await signOut(auth);
+      console.log('🔍 User signed out successfully');
     } catch (error) {
       console.error('Logout error:', error);
+      throw new Error('Logout failed: ' + error);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signUp, logout, markOnboardingComplete }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      loading, 
+      signIn, 
+      signUp, 
+      signInAnonymously: handleSignInAnonymously,
+      logout, 
+      markOnboardingComplete 
+    }}>
       {children}
     </AuthContext.Provider>
   );
