@@ -1,5 +1,6 @@
 import * as FileSystem from 'expo-file-system';
 import { Buffer } from 'buffer';
+import { encryptImage } from '../utils/crypto';
 
 // Simulated backend service for breast scan image processing
 export class BackendService {
@@ -33,9 +34,9 @@ export class BackendService {
       console.log('Preprocessing image...');
       await this.simulateProcessing(800);
 
-      // Step 3: Encrypt with AES-GCM (simulated)
+      // Step 3: Encrypt with AES-GCM (real)
       console.log('Encrypting image with AES-GCM...');
-      const encryptedData = this.simulateEncryption(base64Image);
+      const encryptedData = encryptImage(base64Image);
       await this.simulateProcessing(600);
 
       // Step 4: Log the process
@@ -149,10 +150,7 @@ export class BackendService {
     return new Promise((resolve) => setTimeout(resolve, delay));
   }
 
-  private simulateEncryption(data: string): string {
-    // Simple encryption simulation - in production use proper AES-GCM
-    return Buffer.from(data, 'base64').toString('hex') + '_encrypted';
-  }
+
 
   private generateMockFindings(): string {
     const findings = [
