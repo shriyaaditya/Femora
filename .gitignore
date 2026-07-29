@@ -38,10 +38,10 @@ yarn-error.*
 
 # Large directories that shouldn't be in builds
 mora/
-backend/
+
 backups/
-docs/
-scripts/
+
+
 *.log
 *.backup*
 *.pyc
