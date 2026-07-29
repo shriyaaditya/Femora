@@ -1,17 +1,17 @@
-import firestoreService, { 
-  UserData, 
+import firestoreService, {
+  UserData,
   TextualFeatures,
-  Scan, 
+  Scan,
   AnalysisResults,
-  ScanImage 
+  ScanImage
 } from '../services/firestoreService';
 
 /**
  * Helper function to create a new user with textual features
  */
 export const createUserWithTextualFeatures = async (
-  uid: string, 
-  email: string, 
+  uid: string,
+  email: string,
   displayName: string,
   textualFeaturesData: Partial<TextualFeatures>
 ): Promise<void> => {
@@ -164,27 +164,27 @@ export const validateTextualFeatures = (data: Partial<TextualFeatures>): boolean
     age: { value: data.age, type: typeof data.age, exists: data.age !== undefined },
     familyHistory: { value: data.familyHistory, type: typeof data.familyHistory, exists: data.familyHistory !== undefined }
   });
-  
+
   // Only require age and familyHistory as mandatory
   const requiredFields = ['age', 'familyHistory'];
-  
+
   // Check required fields
   for (const field of requiredFields) {
     const fieldValue = data[field as keyof TextualFeatures];
     console.log(`🔍 Checking field ${field}:`, { value: fieldValue, type: typeof fieldValue });
-    
+
     if (fieldValue === undefined || fieldValue === null || fieldValue === '') {
       console.log(`🔍 Missing required field: ${field}`);
       return false;
     }
   }
-  
+
   // Check numeric fields are within valid ranges (only if they exist)
   if (data.age !== undefined && (data.age < 0 || data.age > 120)) {
     console.log(`🔍 Invalid age: ${data.age}`);
     return false;
   }
-  
+
   // All other fields are optional, so validation passes if required fields are present
   console.log('🔍 Validation passed!');
   return true;
@@ -210,22 +210,22 @@ export const saveOnboardingData = async (uid: string, onboardingData: any): Prom
       completedAt: new Date().toISOString()
     };
 
-          // Save textual features
-      await firestoreService.updateTextualFeatures(uid, textualFeaturesData);
-      
-      // Also save the user's name to their profile if provided
-      if (onboardingData.name) {
-        await firestoreService.updateUserProfile(uid, {
-          displayName: onboardingData.name
-        });
-        console.log('User name saved to profile:', onboardingData.name);
-      }
-      
-      // Mark onboarding as completed
-      await firestoreService.markOnboardingCompleted(uid);
-      console.log('Onboarding marked as completed');
-      
-      console.log('Onboarding data saved successfully');
+    // Save textual features
+    await firestoreService.updateTextualFeatures(uid, textualFeaturesData);
+
+    // Also save the user's name to their profile if provided
+    if (onboardingData.name) {
+      await firestoreService.updateUserProfile(uid, {
+        displayName: onboardingData.name
+      });
+      console.log('User name saved to profile:', onboardingData.name);
+    }
+
+    // Mark onboarding as completed
+    await firestoreService.markOnboardingCompleted(uid);
+    console.log('Onboarding marked as completed');
+
+    console.log('Onboarding data saved successfully');
   } catch (error) {
     console.error('Error saving onboarding data:', error);
     throw error;
@@ -237,22 +237,22 @@ export const saveOnboardingData = async (uid: string, onboardingData: any): Prom
  */
 export const validateOnboardingData = (data: any): boolean => {
   const requiredFields = ['age', 'familyHistory'];
-  
+
   // Check required fields
   for (const field of requiredFields) {
     if (data[field] === undefined || data[field] === null || data[field] === '') {
       return false;
     }
   }
-  
+
   // Check numeric fields are within valid ranges
   if (data.age && (data.age < 0 || data.age > 120)) return false;
   if (data.discomfortOrTenderness && (data.discomfortOrTenderness < 0 || data.discomfortOrTenderness > 3)) return false;
   if (data.changeInBreastSize && (data.changeInBreastSize < 0 || data.changeInBreastSize > 3)) return false;
   if (data.breastPainOrHeaviness && (data.breastPainOrHeaviness < 0 || data.breastPainOrHeaviness > 5)) return false;
-  
+
   // Check enum values
   if (data.familyHistory && !['Yes', 'No'].includes(data.familyHistory)) return false;
-  
+
   return true;
 };

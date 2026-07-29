@@ -3,6 +3,13 @@
  * This file contains all network-related configuration to avoid IP address inconsistencies
  */
 
+declare const process: {
+  env: {
+    NODE_ENV?: string;
+    [key: string]: string | undefined;
+  };
+};
+
 // Helper function to resolve environment variables with placeholders
 const resolveEnvVar = (key: string, fallback: string): string => {
   try {
@@ -23,36 +30,36 @@ const resolveEnvVar = (key: string, fallback: string): string => {
 export const networkConfig = {
   development: {
     moraBackend: {
-      host: 'femora-mora-backend-896975254795.us-central1.run.app',
-      port: '443',
-      protocol: 'https',
+      host: resolveEnvVar('DEV_MORA_BACKEND_HOST', 'femora-mora-backend-896975254795.us-central1.run.app'),
+      port: resolveEnvVar('DEV_MORA_BACKEND_PORT', '443'),
+      protocol: resolveEnvVar('DEV_MORA_BACKEND_PROTOCOL', 'https'),
     },
     imageBackend: {
-      host: 'femora-image-backend-896975254795.us-central1.run.app',
-      port: '443',
-      protocol: 'https',
+      host: resolveEnvVar('DEV_IMAGE_BACKEND_HOST', 'femora-image-backend-896975254795.us-central1.run.app'),
+      port: resolveEnvVar('DEV_IMAGE_BACKEND_PORT', '443'),
+      protocol: resolveEnvVar('DEV_IMAGE_BACKEND_PROTOCOL', 'https'),
     },
     frontend: {
-      host: 'localhost',
-      port: '8081',
-      protocol: 'http',
+      host: resolveEnvVar('DEV_FRONTEND_HOST', 'localhost'),
+      port: resolveEnvVar('DEV_FRONTEND_PORT', '8081'),
+      protocol: resolveEnvVar('DEV_FRONTEND_PROTOCOL', 'http'),
     },
   },
   production: {
     moraBackend: {
-      host: process.env['PROD_MORA_BACKEND_HOST'] || 'femora-mora-backend-896975254795.us-central1.run.app',
-      port: process.env['PROD_MORA_BACKEND_PORT'] || '443',
-      protocol: process.env['PROD_MORA_BACKEND_PROTOCOL'] || 'https',
+      host: resolveEnvVar('PROD_MORA_BACKEND_HOST', 'femora-mora-backend-896975254795.us-central1.run.app'),
+      port: resolveEnvVar('PROD_MORA_BACKEND_PORT', '443'),
+      protocol: resolveEnvVar('PROD_MORA_BACKEND_PROTOCOL', 'https'),
     },
     imageBackend: {
-      host: process.env['PROD_IMAGE_BACKEND_HOST'] || 'femora-image-backend-896975254795.us-central1.run.app',
-      port: process.env['PROD_IMAGE_BACKEND_PORT'] || '443',
-      protocol: process.env['PROD_IMAGE_BACKEND_PROTOCOL'] || 'https',
+      host: resolveEnvVar('PROD_IMAGE_BACKEND_HOST', 'femora-image-backend-896975254795.us-central1.run.app'),
+      port: resolveEnvVar('PROD_IMAGE_BACKEND_PORT', '443'),
+      protocol: resolveEnvVar('PROD_IMAGE_BACKEND_PROTOCOL', 'https'),
     },
     frontend: {
-      host: process.env['PROD_FRONTEND_HOST'] || 'your-production-domain.com',
-      port: process.env['PROD_FRONTEND_PORT'] || '443',
-      protocol: process.env['PROD_FRONTEND_PROTOCOL'] || 'https',
+      host: resolveEnvVar('PROD_FRONTEND_HOST', 'your-production-domain.com'),
+      port: resolveEnvVar('PROD_FRONTEND_PORT', '443'),
+      protocol: resolveEnvVar('PROD_FRONTEND_PROTOCOL', 'https'),
     },
   },
 };

@@ -32,9 +32,8 @@ const BACKEND_CONFIG = {
     status: '/api/status', // Fixed: matches backend endpoint
     gcpUpload: '/gcp-upload', // New endpoint for GCP upload
   },
-
-  // AES-256 key from .env file
-  encryptionKey: 'cnSOMavj3WBwig3AItojQJSTgGs5X0HfNw39Xeippu8=',
+  // NOTE: Encryption key is intentionally NOT stored here.
+  // The backend fetches it from GCP Secret Manager at runtime.
 };
 
 export interface ImageUploadResponse {
@@ -67,7 +66,8 @@ export interface SecureImageMetadata {
   timestamp: string;
   imageCount?: number; // For multiple image scans
   quality: number;
-  encryptionKey: string;
+  // encryptionKey is intentionally omitted – it never leaves the backend.
+  // The backend retrieves it from GCP Secret Manager per-request.
   gcpUrl?: string;
   firestoreId?: string;
   aiAnalysis?: {
@@ -94,54 +94,6 @@ export class SecureImageService {
   }
 
   /**
-   * SECURE IMAGE FLOW: Capture → Encrypt → Upload to GCP → Store Metadata in Firestore
-   * NO LOCAL IMAGE STORAGE ALLOWED
-   */
-  async secureImageFlow(
-    base64Image: string, 
-    metadata: Omit<SecureImageMetadata, 'timestamp' | 'encryptionKey'>
-  ): Promise<ImageUploadResponse> {
-    try {
-      console.log('🔐 Starting SECURE image flow...');
-      console.log('⚠️ NO LOCAL IMAGE STORAGE - Images encrypted and sent to GCP only');
-
-      // Prepare the secure payload
-      const payload = {
-        image: base64Image,
-        metadata: {
-          ...metadata,
-          timestamp: new Date().toISOString(),
-          encryptionKey: BACKEND_CONFIG.encryptionKey,
-        },
-      };
-
-      // Send to backend for encryption and GCP upload
-      const response = await fetch(`${this.baseUrl}${BACKEND_CONFIG.endpoints.gcpUpload}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${await this.getAuthToken()}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const result: ImageUploadResponse = await response.json();
-      console.log('✅ SECURE image flow completed:', result);
-      console.log('🔒 Image encrypted and stored in GCP, metadata in Firestore');
-
-      return result;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error('❌ SECURE image flow failed:', errorMessage);
-      throw new Error(`SECURE image flow failed: ${errorMessage}`);
-    }
-  }
-
-  /**
    * Upload image to Python backend for processing (legacy method)
    */
   async uploadImage(base64Image: string, metadata: any = {}): Promise<ImageUploadResponse> {
@@ -155,7 +107,7 @@ export class SecureImageService {
           timestamp: new Date().toISOString(),
           userId: metadata.userId,
           scanType: metadata.scanType || 'breast-scan',
-          encryptionKey: BACKEND_CONFIG.encryptionKey,
+          // encryptionKey intentionally omitted — backend retrieves it from GCP Secret Manager
           ...metadata,
         },
       };
@@ -226,7 +178,7 @@ export class SecureImageService {
           timestamp: new Date().toISOString(),
           userId: metadata.userId,
           scanType: metadata.scanType || 'breast-scan',
-          encryptionKey: BACKEND_CONFIG.encryptionKey,
+          // encryptionKey intentionally omitted — backend retrieves it from GCP Secret Manager
           directProcessing: true,
           ...metadata,
         },
@@ -262,15 +214,14 @@ export class SecureImageService {
   private async getAuthToken(): Promise<string> {
     try {
       // Import Firebase auth
-      const { auth } = await import('../config/firebase');
-      const { onAuthStateChanged } = await import('firebase/auth');
-      
+      const { auth } = await import('../../config/firebase');
+
       // Get current user
       const user = auth.currentUser;
       if (user) {
         return user.uid; // Use Firebase user ID as token
       }
-      
+
       // If no user, return anonymous token
       return 'anonymous-user';
     } catch (error) {
@@ -279,26 +230,6 @@ export class SecureImageService {
     }
   }
 
-  /**
-   * Validate encryption key format
-   */
-  validateEncryptionKey(key: string): boolean {
-    try {
-      const decoded = atob(key);
-      return decoded.length === 32; // AES-256 requires 32 bytes
-    } catch {
-      return false;
-    }
-  }
-
-  /**
-   * Generate a new encryption key (for development/testing)
-   */
-  generateEncryptionKey(): string {
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return btoa(String.fromCharCode.apply(null, Array.from(array)));
-  }
 
   /**
    * SECURITY: Verify no local image storage
